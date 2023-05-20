@@ -1,9 +1,12 @@
 ﻿using IoT.Data;
 using NewLife;
 using NewLife.Caching;
+using NewLife.Data;
 using NewLife.IoT.ThingModels;
 using NewLife.Log;
+using NewLife.Reflection;
 using NewLife.Security;
+using NewLife.Serialization;
 using XCode;
 
 namespace IoTZero.Services;
@@ -12,8 +15,8 @@ namespace IoTZero.Services;
 public class ThingService
 {
     private readonly DataService _dataService;
-    private readonly QueueService _queue;
     private readonly QueueService _queueService;
+    private readonly MyDeviceService _deviceService;
     private readonly ITracer _tracer;
     private static readonly ICache _cache = new MemoryCache();
 
@@ -25,32 +28,43 @@ public class ThingService
     /// <param name="ruleService"></param>
     /// <param name="segmentService"></param>
     /// <param name="tracer"></param>
-    public ThingService(DataService dataService, QueueService queue, QueueService queueService, ITracer tracer)
+    public ThingService(DataService dataService, QueueService queueService, MyDeviceService deviceService, ITracer tracer)
     {
         _dataService = dataService;
-        _queue = queue;
         _queueService = queueService;
+        _deviceService = deviceService;
         _tracer = tracer;
     }
 
     #region 属性
-    /// <summary>上报数据，写入属性表、数据表、分段数据表</summary>
+    /// <summary>上报数据</summary>
     /// <param name="device"></param>
-    /// <param name="name"></param>
-    /// <param name="value"></param>
-    /// <param name="timestamp"></param>
+    /// <param name="model"></param>
     /// <param name="kind"></param>
     /// <param name="ip"></param>
     /// <returns></returns>
-    public DeviceProperty PostData(Device device, String name, Object value, Int64 timestamp, String kind, String ip)
+    public Int32 PostData(Device device, DataModels model, String kind, String ip)
     {
-        var dp = PostProperty(device, name, value, timestamp, ip);
+        var rs = 0;
+        foreach (var item in model.Items)
+        {
+            var property = BuildDataPoint(device, item.Name, item.Value, item.Time, ip);
+            if (property != null)
+            {
+                UpdateProperty(property);
 
-        // 记录数据流水，使用经过处理的属性数值字段
-        if (dp != null)
-            _dataService.AddData(dp.DeviceId, timestamp, dp.Name, dp.Value, kind, ip);
+                SaveHistory(device, property, item.Time, kind, ip);
 
-        return dp;
+                rs++;
+            }
+        }
+
+        // 自动上线
+        if (device != null) _deviceService.SetDeviceOnline(device, ip, kind);
+
+        //todo 触发指定设备的联动策略
+
+        return rs;
     }
 
     /// <summary>设备属性上报</summary>
@@ -65,10 +79,19 @@ public class ThingService
         var rs = 0;
         foreach (var item in items)
         {
-            PostData(device, item.Name, item.Value, 0, "PostProperty", ip);
+            var property = BuildDataPoint(device, item.Name, item.Value, 0, ip);
+            if (property != null)
+            {
+                UpdateProperty(property);
 
-            rs++;
+                SaveHistory(device, property, 0, nameof(PostProperty), ip);
+
+                rs++;
+            }
         }
+
+        // 自动上线
+        if (device != null) _deviceService.SetDeviceOnline(device, ip, nameof(PostProperty));
 
         //todo 触发指定设备的联动策略
 
@@ -82,9 +105,9 @@ public class ThingService
     /// <param name="timestamp">时间戳</param>
     /// <param name="ip">IP地址</param>
     /// <returns></returns>
-    public DeviceProperty PostProperty(Device device, String name, Object value, Int64 timestamp, String ip)
+    public DeviceProperty BuildDataPoint(Device device, String name, Object value, Int64 timestamp, String ip)
     {
-        using var span = _tracer?.NewSpan("PostProperty", $"{device.Id}-{name}-{value}");
+        using var span = _tracer?.NewSpan(nameof(BuildDataPoint), $"{device.Id}-{name}-{value}");
 
         var entity = GetProperty(device, name);
         if (entity == null)
@@ -105,7 +128,11 @@ public class ThingService
         }
 
         // 检查是否锁定
-        if (!entity.Enable) return null;
+        if (!entity.Enable)
+        {
+            _tracer?.NewError($"{nameof(BuildDataPoint)}-NotEnable", new { name, entity.Enable });
+            return null;
+        }
 
         //todo 检查数据是否越界
 
@@ -114,20 +141,59 @@ public class ThingService
         entity.Name = name;
         entity.Value = value?.ToString();
 
-        var hasDirty = (entity as IEntity).Dirtys[nameof(entity.Value)];
-
         var now = DateTime.Now;
-        //entity.TraceId = DefaultSpan.Current?.TraceId;
+        entity.TraceId = DefaultSpan.Current?.TraceId;
         entity.UpdateTime = now;
         entity.UpdateIP = ip;
 
-        // 属性上报直接更新，数据上报异步更新
-        if (entity.Id == 0)
-            entity.Save();
-        else
-            entity.SaveAsync();
-
         return entity;
+    }
+
+    /// <summary>更新属性</summary>
+    /// <param name="property"></param>
+    /// <returns></returns>
+    public Boolean UpdateProperty(DeviceProperty property)
+    {
+        if (property == null) return false;
+
+        //todo 如果短时间内数据没有变化（无脏数据），则不需要保存属性
+        //var hasDirty = (property as IEntity).Dirtys[nameof(property.Value)];
+
+        // 新属性直接更新，其它异步更新
+        if (property.Id == 0)
+            property.Insert();
+        else
+            property.SaveAsync();
+
+        return true;
+    }
+
+    /// <summary>保存历史数据，写入属性表、数据表、分段数据表</summary>
+    /// <param name="device"></param>
+    /// <param name="property"></param>
+    /// <param name="timestamp"></param>
+    /// <param name="kind"></param>
+    /// <param name="ip"></param>
+    public void SaveHistory(Device device, DeviceProperty property, Int64 timestamp, String kind, String ip)
+    {
+        using var span = _tracer?.NewSpan(nameof(SaveHistory), new { deviceName = device.Name, property.Name, property.Value, property.Type });
+        try
+        {
+            // 记录数据流水，使用经过处理的属性数值字段
+            var id = 0L;
+            var data = _dataService.AddData(property.DeviceId, timestamp, property.Name, property.Value, kind, ip);
+            if (data != null) id = data.Id;
+
+            //todo 存储分段数据
+
+            //todo 推送队列
+        }
+        catch (Exception ex)
+        {
+            span?.SetError(ex, property);
+
+            throw;
+        }
     }
 
     /// <summary>获取设备属性对象，长时间缓存，便于加速属性保存</summary>
@@ -139,13 +205,30 @@ public class ThingService
         var key = $"{device.Id}###{name}";
         if (_cache.TryGetValue<DeviceProperty>(key, out var property)) return property;
 
-        using var span = _tracer?.NewSpan("GetProperty", $"{device.Id}-{name}");
+        using var span = _tracer?.NewSpan(nameof(GetProperty), $"{device.Id}-{name}");
 
         var entity = device.Properties.FirstOrDefault(e => e.Name.EqualIgnoreCase(name));
         if (entity != null)
             _cache.Set(key, entity, 3600);
 
         return entity;
+    }
+
+    /// <summary>查询设备属性。应用端调用</summary>
+    /// <param name="device">设备编码</param>
+    /// <param name="names">属性名集合</param>
+    /// <returns></returns>
+    public PropertyModel[] QueryProperty(Device device, String[] names)
+    {
+        var list = new List<PropertyModel>();
+        foreach (var item in device.Properties)
+        {
+            // 如果未指定属性名，则返回全部
+            if (item.Enable && (names == null || names.Length == 0 || item.Name.EqualIgnoreCase(names)))
+                list.Add(new PropertyModel { Name = item.Name, Value = item.Value });
+        }
+
+        return list.ToArray();
     }
     #endregion
 
@@ -192,7 +275,7 @@ public class ThingService
         //log.Update();
 
         // 推入服务响应队列，让服务调用方得到响应
-        _queue.Publish(model);
+        _queueService.Publish(model);
 
         return 1;
     }
@@ -207,12 +290,13 @@ public class ThingService
     /// <returns></returns>
     public async Task<ServiceReplyModel> InvokeAsync(Device device, String command, String argument, DateTime expire)
     {
-        var log = InvokeService(device, command, argument, expire);
+        var model = InvokeService(device, command, argument, expire);
 
         //var model = log.ToServiceModel();
-        _queueService.Publish(log);
+        _queueService.Publish(device.Code, model);
 
-        return await _queueService.ConsumeOneAsync(log.Id);
+        var rs = await _queueService.GetReplyQueue(model.Id).TakeOneAsync(5_000);
+        return rs?.ToJsonEntity<ServiceReplyModel>();
     }
     #endregion
 }

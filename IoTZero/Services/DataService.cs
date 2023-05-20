@@ -24,12 +24,12 @@ public class DataService
     /// <param name="kind"></param>
     /// <param name="ip"></param>
     /// <returns></returns>
-    public Int32 AddData(Int32 deviceId, Int64 time, String name, String value, String kind, String ip)
+    public DeviceData AddData(Int32 deviceId, Int64 time, String name, String value, String kind, String ip)
     {
-        if (value.IsNullOrEmpty()) return 0;
+        if (value.IsNullOrEmpty()) return null;
 
         // 原始数据不再落库，仅用于解析
-        if (name.StartsWithIgnoreCase("raw-", "channel-")) return 0;
+        if (name.StartsWithIgnoreCase("raw-", "channel-")) return null;
 
         using var span = _tracer?.NewSpan("AddData", $"{deviceId}-{name}-{value}");
 
@@ -40,7 +40,7 @@ public class DataService
 
         var traceId = DefaultSpan.Current?.TraceId;
 
-        var entity = new DeviceData()
+        var entity = new DeviceData
         {
             //Id = snow.NewId(time),
             DeviceId = deviceId,
@@ -57,9 +57,7 @@ public class DataService
 
         var rs = entity.SaveAsync() ? 1 : 0;
 
-        //todo 推送数据
-
-        return rs;
+        return entity;
     }
     #endregion
 }

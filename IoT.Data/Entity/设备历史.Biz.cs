@@ -11,6 +11,7 @@ using System.Web;
 using System.Web.Script.Serialization;
 using System.Xml.Serialization;
 using NewLife;
+using NewLife.Caching;
 using NewLife.Data;
 using NewLife.Log;
 using NewLife.Model;
@@ -175,5 +176,50 @@ public partial class DeviceHistory : Entity<DeviceHistory>
     #endregion
 
     #region 业务操作
+    /// <summary>删除指定日期之前的数据</summary>
+    /// <param name="date"></param>
+    /// <returns></returns>
+    public static Int32 DeleteBefore(DateTime date) => Delete(_.Id < Meta.Factory.Snow.GetId(date));
+
+    private static ICache _cache = new MemoryCache();
+    /// <summary>创建日志</summary>
+    /// <param name="device"></param>
+    /// <param name="action"></param>
+    /// <param name="success"></param>
+    /// <param name="remark"></param>
+    /// <param name="creator"></param>
+    /// <param name="ip"></param>
+    /// <param name="traceId"></param>
+    /// <returns></returns>
+    public static DeviceHistory Create(Device device, String action, Boolean success, String remark, String creator, String ip, String traceId)
+    {
+        if (device == null) device = new Device();
+
+        if (creator.IsNullOrEmpty()) creator = Environment.MachineName;
+        if (traceId.IsNullOrEmpty()) traceId = DefaultSpan.Current?.TraceId;
+        var history = new DeviceHistory
+        {
+            DeviceId = device.Id,
+            Name = device.Name,
+            Action = action,
+            Success = success,
+
+            Remark = remark,
+
+            TraceId = traceId,
+            Creator = creator,
+            CreateTime = DateTime.Now,
+            CreateIP = ip,
+        };
+
+        history.SaveAsync();
+
+        return history;
+    }
+
+    private static readonly Lazy<FieldCache<DeviceHistory>> NameCache = new(() => new FieldCache<DeviceHistory>(__.Action));
+    /// <summary>获取所有分类名称</summary>
+    /// <returns></returns>
+    public static IDictionary<String, String> FindAllAction() => NameCache.Value.FindAllName();
     #endregion
 }

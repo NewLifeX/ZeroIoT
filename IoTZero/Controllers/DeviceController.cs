@@ -5,6 +5,7 @@ using IoTZero.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NewLife;
+using NewLife.IoT.Models;
 using NewLife.IoT.ThingModels;
 using NewLife.Log;
 using NewLife.Remoting;
@@ -47,11 +48,8 @@ public class DeviceController : BaseController
     public LoginResponse Login(LoginInfo model)
     {
         var dv = Device ?? Device.FindByCode(model.Code);
-        model = _hookService.Hook(HookKinds.Login, dv, model);
 
         var rs = _deviceService.Login(model, "Http", UserHost);
-
-        _hookService.HookAsync(HookKinds.LoginCompleted, dv, rs);
 
         return rs;
     }
@@ -65,8 +63,6 @@ public class DeviceController : BaseController
     {
         var device = Device;
         if (device != null) _deviceService.Logout(device, reason, "Http", UserHost);
-
-        _hookService.HookAsync(HookKinds.Logout, device, new { reason });
 
         return new LogoutResponse
         {
@@ -106,8 +102,6 @@ public class DeviceController : BaseController
 
                 _deviceService.WriteHistory(device, "刷新令牌", true, tm.ToJson(), UserHost);
             }
-
-            _hookService.HookAsync(HookKinds.Ping, device, model);
         }
 
         return rs;
@@ -201,16 +195,6 @@ public class DeviceController : BaseController
 
                         // 向客户端传递埋点信息，构建完整调用链
                         msg.TraceId = span + "";
-
-                        var log = DeviceServiceLog.FindById(msg.Id);
-                        if (log != null)
-                        {
-                            if (log.TraceId.IsNullOrEmpty()) log.TraceId = span?.TraceId;
-                            log.Status = ServiceStatus.处理中;
-                            log.Update();
-                        }
-
-                        _hookService.HookAsync(HookKinds.ServiceInvoke, device, msg);
 
                         await socket.SendAsync(msg.ToJson().GetBytes(), WebSocketMessageType.Text, true, cancellationToken);
                     }

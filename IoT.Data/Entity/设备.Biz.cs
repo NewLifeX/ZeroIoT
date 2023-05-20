@@ -5,6 +5,7 @@ using System.Web.Script.Serialization;
 using System.Xml.Serialization;
 using NewLife;
 using NewLife.Data;
+using NewLife.IoT.Models;
 using XCode;
 using XCode.Cache;
 using XCode.Membership;
@@ -202,5 +203,68 @@ public partial class Device : Entity<Device>
     #endregion
 
     #region 业务操作
+
+    /// <summary>登录并保存信息</summary>
+    /// <param name="di"></param>
+    /// <param name="ip"></param>
+    public void Login(LoginInfo di, String ip)
+    {
+        var dv = this;
+
+        if (di != null) dv.Fill(di);
+
+        // 如果节点本地IP为空，而来源IP是局域网，则直接取用
+        if (dv.IP.IsNullOrEmpty()) dv.IP = ip;
+
+        dv.Online = true;
+        dv.Logins++;
+        dv.LastLogin = DateTime.Now;
+        dv.LastLoginIP = ip;
+
+        if (dv.CreateIP.IsNullOrEmpty()) dv.CreateIP = ip;
+        dv.UpdateIP = ip;
+
+        dv.Save();
+    }
+
+    /// <summary>设备上线</summary>
+    /// <param name="ip"></param>
+    /// <param name="reason"></param>
+    public void SetOnline(String ip, String reason)
+    {
+        var dv = this;
+
+        if (!dv.Online && dv.Enable)
+        {
+            dv.Online = true;
+            dv.Update();
+
+            if (!reason.IsNullOrEmpty())
+                DeviceHistory.Create(dv, "上线", true, $"设备上线。{reason}", null, ip, null);
+        }
+    }
+
+    /// <summary>
+    /// 注销
+    /// </summary>
+    public void Logout()
+    {
+        Online = false;
+
+        Update();
+    }
+
+    /// <summary>填充</summary>
+    /// <param name="di"></param>
+    public void Fill(LoginInfo di)
+    {
+        var dv = this;
+
+        if (dv.Name.IsNullOrEmpty()) dv.Name = di.Name;
+        if (!di.Version.IsNullOrEmpty()) dv.Version = di.Version;
+
+        if (!di.IP.IsNullOrEmpty()) dv.IP = di.IP;
+        if (!di.UUID.IsNullOrEmpty()) dv.Uuid = di.UUID;
+    }
     #endregion
 }

@@ -36,4 +36,8 @@
     <PackageReference Include="SmartA4" Version="1.0.2023.519" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\IoTCore\IoTCore.csproj" />
+  </ItemGroup>
+
 </Project>

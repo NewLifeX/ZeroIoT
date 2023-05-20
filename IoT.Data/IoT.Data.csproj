@@ -5,10 +5,12 @@
     <AssemblyTitle>物联网数据层</AssemblyTitle>
     <Description>IoT数据层</Description>
     <Company>新生命开发团队</Company>
-    <Copyright>©2002-2022 NewLife</Copyright>
-    <Version>1.2.2022.0214</Version>
-    <FileVersion>1.2.2022.0214</FileVersion>
-    <AssemblyVersion>1.2.*</AssemblyVersion>
+    <Copyright>©2002-2023 NewLife</Copyright>
+    <VersionPrefix>1.0</VersionPrefix>
+    <VersionSuffix>$([System.DateTime]::Now.ToString(`yyyy.MMdd`))</VersionSuffix>
+    <Version>$(VersionPrefix).$(VersionSuffix)</Version>
+    <FileVersion>$(Version)</FileVersion>
+    <AssemblyVersion>$(VersionPrefix).*</AssemblyVersion>
     <Deterministic>false</Deterministic>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
@@ -32,23 +34,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Entity\告警历史.Biz.cs" />
-    <Compile Remove="Entity\告警历史.cs" />
-    <Compile Remove="Entity\告警设置.Biz.cs" />
-    <Compile Remove="Entity\告警设置.cs" />
-    <Compile Remove="Entity\子设备.Biz.cs" />
-    <Compile Remove="Entity\子设备.cs" />
-    <Compile Remove="Entity\设备分组.Biz.cs" />
-    <Compile Remove="Entity\设备分组.cs" />
-    <Compile Remove="Entity\设备命令.Biz.cs" />
-    <Compile Remove="Entity\设备命令.cs" />
-    <Compile Remove="Entity\设备服务状态.Biz.cs" />
-    <Compile Remove="Entity\设备服务状态.cs" />
+    <PackageReference Include="NewLife.IoT" Version="1.8.2023.511" />
+    <PackageReference Include="NewLife.XCode" Version="11.8.2023.511-beta0917" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NewLife.IoT" Version="1.7.2023.205" />
-    <PackageReference Include="NewLife.XCode" Version="11.5.2023.203" />
+    <ProjectReference Include="..\IoTCore\IoTCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

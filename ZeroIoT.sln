@@ -13,7 +13,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IoTZero", "IoTZero\IoTZero.csproj", "{108DA7C0-AE8C-4259-8AA5-07409303AE22}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IoTEdge", "IoTEdge\IoTEdge.csproj", "{9A45E66E-4F0B-40F7-B43E-5F3A18C5D0F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IoTEdge", "IoTEdge\IoTEdge.csproj", "{9A45E66E-4F0B-40F7-B43E-5F3A18C5D0F0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IoTCore", "IoTCore\IoTCore.csproj", "{D4782422-ABB8-451D-8F02-98CB073BB891}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{9A45E66E-4F0B-40F7-B43E-5F3A18C5D0F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A45E66E-4F0B-40F7-B43E-5F3A18C5D0F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A45E66E-4F0B-40F7-B43E-5F3A18C5D0F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4782422-ABB8-451D-8F02-98CB073BB891}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4782422-ABB8-451D-8F02-98CB073BB891}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4782422-ABB8-451D-8F02-98CB073BB891}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4782422-ABB8-451D-8F02-98CB073BB891}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

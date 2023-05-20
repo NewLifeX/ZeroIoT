@@ -64,12 +64,22 @@
       <Column Name="Id" DataType="Int32" Identity="True" PrimaryKey="True" Description="编号" />
       <Column Name="Name" DataType="String" Master="True" Description="名称" />
       <Column Name="Code" DataType="String" Description="编码。设备唯一证书DeviceName，用于设备认证，在注册时由系统生成" />
+      <Column Name="Secret" DataType="String" Description="密钥。设备密钥DeviceSecret，用于设备认证，注册时由系统生成" />
       <Column Name="ProductId" DataType="Int32" Description="产品" />
+      <Column Name="GroupId" DataType="Int32" Map="DeviceGroup@Id@Name@GroupPath" Description="分组" />
       <Column Name="Enable" DataType="Boolean" Description="启用" />
       <Column Name="Online" DataType="Boolean" Description="在线" />
+      <Column Name="Version" DataType="String" Description="版本" />
+      <Column Name="IP" DataType="String" Length="200" Description="本地IP" />
       <Column Name="Uuid" DataType="String" Length="200" Description="唯一标识。硬件标识，或其它能够唯一区分设备的标记" />
       <Column Name="Location" DataType="String" Description="位置。场地安装位置，或者经纬度" Category="登录信息" />
+      <Column Name="Period" DataType="Int32" Description="心跳周期。默认60秒" Category="参数设置" />
       <Column Name="PollingTime" DataType="Int32" Description="采集间隔。默认1000ms" Category="参数设置" />
+      <Column Name="Logins" DataType="Int32" Description="登录次数" Category="登录信息" />
+      <Column Name="LastLogin" DataType="DateTime" Description="最后登录" Category="登录信息" />
+      <Column Name="LastLoginIP" DataType="String" Description="最后IP。最后的公网IP地址" Category="登录信息" />
+      <Column Name="OnlineTime" DataType="Int32" Description="在线时长。总时长，每次下线后累加，单位，秒" Category="登录信息" />
+      <Column Name="RegisterTime" DataType="DateTime" Description="激活时间" Category="登录信息" />
       <Column Name="CreateUserId" DataType="Int32" Description="创建者" Model="False" Category="扩展" />
       <Column Name="CreateTime" DataType="DateTime" Description="创建时间" Model="False" Category="扩展" />
       <Column Name="CreateIP" DataType="String" Description="创建地址" Model="False" Category="扩展" />
@@ -82,6 +92,54 @@
       <Index Columns="Code" Unique="True" />
       <Index Columns="ProductId" />
       <Index Columns="Uuid" />
+      <Index Columns="UpdateTime" />
+    </Indexes>
+  </Table>
+  <Table Name="DeviceGroup" Description="设备分组。物联网平台支持建立设备分组，分组中可包含不同产品下的设备。通过设备组来进行跨产品管理设备。" BaseType="EntityTree">
+    <Columns>
+      <Column Name="Id" DataType="Int32" Identity="True" PrimaryKey="True" Description="编号" />
+      <Column Name="Name" DataType="String" Master="True" Description="名称" />
+      <Column Name="ParentId" DataType="Int32" Description="父级" />
+      <Column Name="Sort" DataType="Int32" Description="排序" />
+      <Column Name="Devices" DataType="Int32" Description="设备总数" />
+      <Column Name="Activations" DataType="Int32" Description="激活设备" />
+      <Column Name="Onlines" DataType="Int32" Description="当前在线" />
+      <Column Name="CreateUserId" DataType="Int32" Description="创建者" Model="False" Category="扩展" />
+      <Column Name="CreateTime" DataType="DateTime" Description="创建时间" Model="False" Category="扩展" />
+      <Column Name="CreateIP" DataType="String" Description="创建地址" Model="False" Category="扩展" />
+      <Column Name="UpdateUserId" DataType="Int32" Description="更新者" Model="False" Category="扩展" />
+      <Column Name="UpdateTime" DataType="DateTime" Description="更新时间" Model="False" Category="扩展" />
+      <Column Name="UpdateIP" DataType="String" Description="更新地址" Model="False" Category="扩展" />
+      <Column Name="Remark" DataType="String" Length="500" Description="描述" Category="扩展" />
+    </Columns>
+    <Indexes>
+      <Index Columns="ParentId,Name" Unique="True" />
+      <Index Columns="Name" />
+    </Indexes>
+  </Table>
+  <Table Name="DeviceOnline" Description="设备在线">
+    <Columns>
+      <Column Name="Id" DataType="Int32" Identity="True" PrimaryKey="True" Description="编号" />
+      <Column Name="SessionId" DataType="String" Description="会话" />
+      <Column Name="ProductId" DataType="Int32" Description="产品" />
+      <Column Name="DeviceId" DataType="Int32" Description="设备" />
+      <Column Name="Name" DataType="String" Master="True" Description="名称" />
+      <Column Name="IP" DataType="String" Length="200" Description="本地IP" />
+      <Column Name="GroupPath" DataType="String" Description="分组" />
+      <Column Name="Pings" DataType="Int32" Description="心跳" />
+      <Column Name="Delay" DataType="Int32" Description="延迟。网络延迟，单位ms" />
+      <Column Name="Offset" DataType="Int32" Description="偏移。客户端时间减服务端时间，单位s" />
+      <Column Name="LocalTime" DataType="DateTime" Description="本地时间" />
+      <Column Name="Token" DataType="String" Length="200" Description="令牌" />
+      <Column Name="Creator" DataType="String" Description="创建者。服务端设备" />
+      <Column Name="CreateTime" DataType="DateTime" Description="创建时间" Model="False" />
+      <Column Name="CreateIP" DataType="String" Description="创建地址" Model="False" />
+      <Column Name="UpdateTime" DataType="DateTime" Description="更新时间" Model="False" />
+      <Column Name="Remark" DataType="String" Length="500" Description="备注" />
+    </Columns>
+    <Indexes>
+      <Index Columns="SessionId" Unique="True" />
+      <Index Columns="ProductId" />
       <Index Columns="UpdateTime" />
     </Indexes>
   </Table>

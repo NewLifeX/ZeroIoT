@@ -1,6 +1,6 @@
-﻿using System.Reflection;
-using IoT.Data;
-using Microsoft.AspNetCore.Authorization;
+﻿using IoT.Data;
+using IoTZero.Common;
+using IoTZero.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -27,11 +27,7 @@ public class AppController : ControllerBase, IActionFilter
     /// <summary>令牌</summary>
     public String Token { get; set; }
 
-    /// <summary>当前应用</summary>
-    public ApiApp App { get; set; }
-
     private readonly QueueService _queue;
-    private readonly AppService _appService;
     private readonly MyDeviceService _deviceService;
     private readonly ThingService _thingService;
     private readonly ITracer _tracer;
@@ -42,14 +38,12 @@ public class AppController : ControllerBase, IActionFilter
     /// 实例化应用管理服务
     /// </summary>
     /// <param name="queue"></param>
-    /// <param name="appService"></param>
     /// <param name="deviceService"></param>
     /// <param name="thingService"></param>
     /// <param name="tracer"></param>
-    public AppController(QueueService queue, AppService appService, MyDeviceService deviceService, ThingService thingService, ITracer tracer)
+    public AppController(QueueService queue, MyDeviceService deviceService, ThingService thingService, ITracer tracer)
     {
         _queue = queue;
-        _appService = appService;
         _deviceService = deviceService;
         _thingService = thingService;
         _tracer = tracer;
@@ -71,13 +65,11 @@ public class AppController : ControllerBase, IActionFilter
         {
             if (!token.IsNullOrEmpty())
             {
-                var at = _appService.TryAuth(token, out var error);
-                App = at?.App;
-                if (error != null) throw error;
+                //todo 验证令牌有效性
             }
 
-            if (App == null && context.ActionDescriptor is ControllerActionDescriptor act && !act.MethodInfo.IsDefined(typeof(AllowAnonymousAttribute)))
-                throw new ApiException(403, "设备认证失败");
+            //if (context.ActionDescriptor is ControllerActionDescriptor act && !act.MethodInfo.IsDefined(typeof(AllowAnonymousAttribute)))
+            //    throw new ApiException(403, "设备认证失败");
         }
         catch (Exception ex)
         {
@@ -112,19 +104,19 @@ public class AppController : ControllerBase, IActionFilter
             }
             else if (context.Result is EmptyResult)
                 context.Result = new JsonResult(new { code = 0, data = new { }, traceId });
-        else if (context.Exception != null && !context.ExceptionHandled)
-        {
-            var ex = context.Exception.GetTrue();
-            if (ex is ApiException aex)
-                context.Result = new JsonResult(new { code = aex.Code, data = aex.Message, traceId });
-            else
-                context.Result = new JsonResult(new { code = 500, data = ex.Message, traceId });
+            else if (context.Exception != null && !context.ExceptionHandled)
+            {
+                var ex = context.Exception.GetTrue();
+                if (ex is ApiException aex)
+                    context.Result = new JsonResult(new { code = aex.Code, data = aex.Message, traceId });
+                else
+                    context.Result = new JsonResult(new { code = 500, data = ex.Message, traceId });
 
-            context.ExceptionHandled = true;
+                context.ExceptionHandled = true;
 
-            // 输出异常日志
-            if (XTrace.Debug) XTrace.WriteException(ex);
-        }
+                // 输出异常日志
+                if (XTrace.Debug) XTrace.WriteException(ex);
+            }
     }
 
     private void WriteError(Exception ex, ActionContext context)
@@ -133,7 +125,7 @@ public class AppController : ControllerBase, IActionFilter
         var action = context.HttpContext.Request.Path + "";
         if (context.ActionDescriptor is ControllerActionDescriptor act) action = $"{act.ControllerName}/{act.ActionName}";
 
-        _appService.WriteHistory(App, action, false, ex?.GetTrue() + Environment.NewLine + _args?.ToJson(), UserHost);
+        XTrace.WriteLine("{0} {1}", action, ex.Message);
     }
     #endregion
 
@@ -162,68 +154,7 @@ public class AppController : ControllerBase, IActionFilter
         var dv = Device.FindByCode(model.DeviceCode);
         if (dv == null) return null;
 
-        model.Value += "";
-        var rs = _thingService.SetProperty(dv, new[] { model }, UserHost);
-
-        // 执行远程调用
-        var dp = dv.Properties.FirstOrDefault(e => e.Name == model.Name);
-        if (dp != null)
-        {
-            var input = new
-            {
-                model.Name,
-                model.Value,
-                dp.Address,
-            };
-            var request = new ServiceRequest
-            {
-                DeviceId = dv.Id,
-                ServiceName = "SetProperty",
-                InputData = input.ToJson(),
-                Timeout = 5_000,
-            };
-
-            return await InvokeService(request);
-        }
-
-        return null;
-    }
-
-    /// <summary>设置设备属性</summary>
-    /// <param name="model"></param>
-    /// <returns></returns>
-    [ApiFilter]
-    [HttpPost(nameof(SetPropertyById))]
-    public async Task<ServiceReplyModel> SetPropertyById(DevicePropertySimpleModel model)
-    {
-        var prop = DeviceProperty.FindById(model.Id);
-        if (prop == null || prop.Device == null) return null;
-
-        var dv = prop.Device;
-        var rs = _thingService.SetProperty(dv, new[] { new DevicePropertyModel() { Name = prop.Name, Value = model.Value + "", DeviceCode = prop.Device.Code } }, UserHost);
-
-        // 执行远程调用
-        var dp = dv.Properties.FirstOrDefault(e => e.Name == prop.Name);
-        if (dp != null)
-        {
-            var input = new
-            {
-                prop.Name,
-                model.Value,
-                dp.Address,
-            };
-            var request = new ServiceRequest
-            {
-                DeviceId = dv.Id,
-                ServiceName = "SetProperty",
-                InputData = input.ToJson(),
-                Timeout = 5_000,
-            };
-
-            return await InvokeService(request);
-        }
-
-        return null;
+        throw new NotImplementedException();
     }
 
     /// <summary>调用设备服务</summary>
@@ -243,17 +174,11 @@ public class AppController : ControllerBase, IActionFilter
 
         if (dv == null) throw new ArgumentException($"找不到该设备：DeviceId={service.DeviceId}，DeviceCode={service.DeviceCode}");
 
-        var log = _thingService.InvokeService(dv, service.ServiceName, service.InputData, service.Expire);
+        var model = _thingService.InvokeService(dv, service.ServiceName, service.InputData, service.Expire);
 
         // 当前设备的上级设备，作为下发消息的主设备
-        var code = "";
-        while (dv != null)
-        {
-            code = dv.Code;
-            dv = dv.Parent;
-        }
+        var code = dv.Code;
 
-        var model = log.ToServiceModel();
         _queue.Publish(code, model);
 
         var reply = new ServiceReplyModel { Id = model.Id };
@@ -261,37 +186,7 @@ public class AppController : ControllerBase, IActionFilter
         // 挂起等待。借助redis队列，等待响应
         if (service.Timeout > 1000)
         {
-            var q = _queue.GetReplyQueue(log.Id);
-            try
-            {
-                var mqMsg = await q.TakeOneAsync(service.Timeout / 1000);
-                if (!mqMsg.IsNullOrEmpty())
-                {
-                    // 埋点
-                    using var span = _tracer?.NewSpan($"redismq:ServiceLog", mqMsg);
-
-                    // 解码
-                    var dic = JsonParser.Decode(mqMsg);
-                    span?.Detach(dic);
-                    reply = JsonHelper.Convert<ServiceReplyModel>(dic);
-                    //reply = rs.ToJsonEntity<ServiceReplyModel>();
-                }
-
-                //if (log.Status <= ServiceStatus.处理中) log.Status = ServiceStatus.已完成;
-            }
-            catch (TimeoutException ex)
-            {
-                if (log.Status <= ServiceStatus.处理中)
-                {
-                    log.Status = ServiceStatus.错误;
-                    log.OutputData = ex.Message;
-                }
-            }
-            finally
-            {
-                if (log.CreateTime.Year > 2000) log.Cost = (Int32)(DateTime.Now - log.CreateTime).TotalMilliseconds;
-                log.Update();
-            }
+            throw new NotImplementedException();
         }
 
         return reply;

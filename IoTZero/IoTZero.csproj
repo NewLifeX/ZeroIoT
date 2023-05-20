@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\IoT.Data\IoT.Data.csproj" />
+    <ProjectReference Include="..\IoTCore\IoTCore.csproj" />
   </ItemGroup>
 
 </Project>

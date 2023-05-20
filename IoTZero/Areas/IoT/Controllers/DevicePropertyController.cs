@@ -12,7 +12,7 @@ using NewLife.Serialization;
 using NewLife.Web;
 using XCode.Membership;
 
-namespace IoTEdge.Areas.IoT.Controllers;
+namespace IoTZero.Areas.IoT.Controllers;
 
 [IoTArea]
 [Menu(0, false)]
@@ -96,9 +96,7 @@ public class DevicePropertyController : EntityController<DeviceProperty>
             var value = entity.Value.ToBoolean();
             value = !value;
 
-            //var rs = await _appService.SetProperty(entity.Device.Code, entity.Name, value);
             var model = new PropertyModel { Name = entity.Name, Value = value };
-            _thingService.SetProperty(entity.Device, new[] { model }, UserHost);
 
             // 执行远程调用
             var dp = entity;
@@ -108,14 +106,11 @@ public class DevicePropertyController : EntityController<DeviceProperty>
                 {
                     model.Name,
                     model.Value,
-                    dp.Address,
                 };
 
                 var rs = await _thingService.InvokeAsync(entity.Device, "SetProperty", input.ToJson(), DateTime.Now.AddSeconds(5));
                 if (rs != null && rs.Status >= ServiceStatus.已完成)
-                {
                     msg = $"{rs.Status} {rs.Data}";
-                }
             }
         }
 

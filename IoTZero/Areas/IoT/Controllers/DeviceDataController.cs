@@ -10,7 +10,7 @@ using NewLife.Web;
 using XCode;
 using XCode.Membership;
 
-namespace IoTEdge.Areas.IoT.Controllers;
+namespace IoTZero.Areas.IoT.Controllers;
 
 [IoTArea]
 [Menu(0, false)]
@@ -84,32 +84,24 @@ public class DeviceDataController : EntityController<DeviceData>
                     }
                     var times = new List<DateTime>();
                     for (var dt = minT; dt <= maxT; dt = dt.AddSeconds(step))
-                    {
                         times.Add(dt);
-                    }
 
                     if (step < 60)
-                    {
                         chart.XAxis = new
                         {
                             data = times.Select(e => e.ToString("HH:mm:ss")).ToArray(),
                         };
-                    }
                     else
-                    {
                         chart.XAxis = new
                         {
                             data = times.Select(e => e.ToString("dd-HH:mm")).ToArray(),
                         };
-                    }
                 }
                 else
-                {
                     chart.XAxis = new
                     {
                         data = datax.Keys.Select(e => e.ToString("HH:mm:ss")).ToArray(),
                     };
-                }
                 chart.SetY("数值");
 
                 var max = -9999.0;

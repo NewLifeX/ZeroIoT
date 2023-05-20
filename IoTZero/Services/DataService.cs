@@ -1,7 +1,5 @@
 ﻿using IoT.Data;
-using IoTEdge.Models;
 using NewLife;
-using NewLife.IoT.ThingModels;
 using NewLife.Log;
 
 namespace IoTEdge.Services;
@@ -9,17 +7,11 @@ namespace IoTEdge.Services;
 /// <summary>数据服务</summary>
 public class DataService
 {
-    private readonly PushDataQueueService _pushQueue;
     private readonly ITracer _tracer;
 
     /// <summary>实例化数据服务</summary>
-    /// <param name="pushQueue"></param>
     /// <param name="tracer"></param>
-    public DataService(PushDataQueueService pushQueue, ITracer tracer)
-    {
-        _pushQueue = pushQueue;
-        _tracer = tracer;
-    }
+    public DataService(ITracer tracer) => _tracer = tracer;
 
     #region 方法
     /// <summary>
@@ -65,66 +57,9 @@ public class DataService
 
         var rs = entity.SaveAsync() ? 1 : 0;
 
-        var dv = Device.FindById(deviceId);
-        var msg = new DataModelMessage()
-        {
-            Name = name,
-            Time = time,
-            Value = value,
-            DeviceCode = dv.Code,
-            ProductCode = dv.Product?.Code
-        };
-
-        var container = new MessageSendContainer<DataModelMessage>(msg);
-
-        // 推送主队列
-        _pushQueue.GetDataQueue()?.Add(container);
+        //todo 推送数据
 
         return rs;
-    }
-
-    /// <summary>添加事件</summary>
-    /// <param name="deviceId"></param>
-    /// <param name="model"></param>
-    /// <param name="ip"></param>
-    /// <returns></returns>
-    public void AddEvent(Int32 deviceId, EventModel model, String ip)
-    {
-        var traceId = DefaultSpan.Current?.TraceId;
-        //var snow = DeviceEvent.Meta.Factory.Snow;
-
-        var ev = new DeviceEvent
-        {
-            //Id = snow.NewId(time),
-            DeviceId = deviceId,
-
-            Type = model.Type,
-            Name = model.Name,
-            Remark = model.Remark,
-
-            Timestamp = model.Time,
-            TraceId = traceId,
-            Creator = Environment.MachineName,
-            CreateTime = DateTime.Now,
-            CreateIP = ip,
-        };
-
-        ev.SaveAsync();
-
-        var dv = Device.FindById(deviceId);
-        var msg = new EventModelMessage()
-        {
-            DeviceCode = dv.Code,
-            ProductCode = dv.Product?.Code,
-            Name = model.Name,
-            Time = model.Time,
-            Type = model.Type,
-            Remark = model.Remark,
-        };
-
-        var container = new MessageSendContainer<EventModelMessage>(msg);
-
-        _pushQueue.GetEventQueue()?.Add(container);
     }
     #endregion
 }

@@ -2,9 +2,9 @@
 using NewLife;
 using NewLife.Cube;
 
-namespace IoTEdge.Areas.IoT;
+namespace IoTZero.Areas.IoT;
 
-[DisplayName("网关配置")]
+[DisplayName("设备管理")]
 public class IoTArea : AreaBase
 {
     public IoTArea() : base(nameof(IoTArea).TrimEnd("Area")) { }

@@ -1,5 +1,43 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Tables xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:schemaLocation="https://newlifex.com https://newlifex.com/Model2022.xsd" NameSpace="IoT.Data" ConnName="IoT" Output="" BaseClass="Entity" Version="11.3.2022.1013" Document="https://newlifex.com/xcode/model" DisplayName="" CubeOutput="" xmlns="https://newlifex.com/Model2022.xsd">
+<EntityModel xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:schemaLocation="https://newlifex.com https://newlifex.com/Model2023.xsd" xmlns="https://newlifex.com/Model2023.xsd">
+  <Option>
+    <!--输出目录-->
+    <Output />
+    <!--是否使用中文文件名。默认false-->
+    <ChineseFileName>False</ChineseFileName>
+    <!--基类。可能包含基类和接口，其中{name}替换为Table.Name-->
+    <BaseClass>Entity</BaseClass>
+    <!--命名空间-->
+    <Namespace>IoT.Data</Namespace>
+    <!--是否分部类-->
+    <Partial>False</Partial>
+    <!--类名模板。其中{name}替换为Table.Name，如{name}Model/I{name}Dto等-->
+    <ClassNameTemplate />
+    <!--显示名模板。其中{displayName}替换为Table.DisplayName-->
+    <DisplayNameTemplate />
+    <!--用于生成拷贝函数的模型类。例如{name}或I{name}-->
+    <ModelNameForCopy />
+    <!--带有索引器。实现IModel接口-->
+    <HasIModel>False</HasIModel>
+    <!--模型类模版-->
+    <ModelClass />
+    <!--模型接口模版-->
+    <ModelInterface />
+    <!--数据库连接名-->
+    <ConnName>IoT</ConnName>
+    <!--用户实体转为模型类的模型类。例如{name}或{name}DTO-->
+    <ModelNameForToModel />
+    <!--命名格式。Default/Upper/Lower/Underline-->
+    <NameFormat>Default</NameFormat>
+    <!--生成器版本-->
+    <Version>11.8.2023.0505</Version>
+    <!--帮助文档-->
+    <Document>https://newlifex.com/xcode/model</Document>
+    <!--魔方区域显示名-->
+    <DisplayName />
+    <!--魔方控制器输出目录-->
+    <CubeOutput />
+  </Option>
   <Table Name="Product" Description="产品。设备的集合，通常指一组具有相同功能的设备。物联网平台为每个产品颁发全局唯一的ProductKey。">
     <Columns>
       <Column Name="Id" DataType="Int32" Identity="True" PrimaryKey="True" Description="编号" />
@@ -47,7 +85,7 @@
       <Index Columns="UpdateTime" />
     </Indexes>
   </Table>
-  <Table Name="DeviceHistory" Description="设备历史。记录设备上线下线等操作" >
+  <Table Name="DeviceHistory" Description="设备历史。记录设备上线下线等操作">
     <Columns>
       <Column Name="Id" DataType="Int64" PrimaryKey="True" Description="编号" />
       <Column Name="DeviceId" DataType="Int32" Description="设备" />
@@ -65,7 +103,7 @@
       <Index Columns="DeviceId,Action,Id" />
     </Indexes>
   </Table>
-  <Table Name="DeviceProperty" Description="设备属性。设备的功能模型之一，一般用于描述设备运行时的状态，如环境监测设备所读取的当前环境温度等。一个设备有多个属性，名值表" >
+  <Table Name="DeviceProperty" Description="设备属性。设备的功能模型之一，一般用于描述设备运行时的状态，如环境监测设备所读取的当前环境温度等。一个设备有多个属性，名值表">
     <Columns>
       <Column Name="Id" DataType="Int32" Identity="True" PrimaryKey="True" Description="编号" />
       <Column Name="DeviceId" DataType="Int32" Description="设备" />
@@ -86,7 +124,7 @@
       <Index Columns="UpdateTime" />
     </Indexes>
   </Table>
-  <Table Name="DeviceData" Description="设备数据。设备采集原始数据，按天分表存储" >
+  <Table Name="DeviceData" Description="设备数据。设备采集原始数据，按天分表存储">
     <Columns>
       <Column Name="Id" DataType="Int64" PrimaryKey="True" Description="编号" />
       <Column Name="DeviceId" DataType="Int32" Description="设备" />
@@ -105,4 +143,4 @@
       <Index Columns="DeviceId,Kind,Id" />
     </Indexes>
   </Table>
-</Tables>
+</EntityModel>

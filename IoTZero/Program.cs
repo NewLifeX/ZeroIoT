@@ -39,21 +39,15 @@ if (set3.IsNew)
 }
 
 // 注册服务
-services.AddSingleton<DataConsumerService>();
-
 services.AddSingleton<ThingService>();
 services.AddSingleton<DataService>();
 services.AddSingleton<QueueService>();
-services.AddSingleton<PushDataQueueService>();
-services.AddSingleton<RuleService>();
-services.AddSingleton<PointImportService>();
 
 services.AddHttpClient("hc", e => e.Timeout = TimeSpan.FromSeconds(5));
 
 services.AddSingleton<ICache, MemoryCache>();
 
 // 后台服务
-services.AddHostedService<EdgeHostedService>();
 
 services.AddControllersWithViews();
 

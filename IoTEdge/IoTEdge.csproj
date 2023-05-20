@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <AssemblyTitle>物联网网关</AssemblyTitle>
+    <Description>IoT边缘网关</Description>
+    <Company>新生命开发团队</Company>
+    <Copyright>©2002-2023 NewLife</Copyright>
+    <VersionPrefix>1.0</VersionPrefix>
+    <VersionSuffix>$([System.DateTime]::Now.ToString(`yyyy.MMdd`))</VersionSuffix>
+    <Version>$(VersionPrefix).$(VersionSuffix)</Version>
+    <FileVersion>$(Version)</FileVersion>
+    <AssemblyVersion>$(VersionPrefix).*</AssemblyVersion>
+    <Deterministic>false</Deterministic>
+    <OutputPath>..\Bin\IoTEdge</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NewLife.BACnet" Version="1.0.2023.520-beta0022" />
+    <PackageReference Include="NewLife.Core" Version="10.3.2023.519-beta1319" />
+    <PackageReference Include="NewLife.IoT" Version="1.8.2023.511" />
+    <PackageReference Include="NewLife.Modbus" Version="1.6.2023.511" />
+    <PackageReference Include="NewLife.ModbusRTU" Version="1.6.2023.511" />
+    <PackageReference Include="NewLife.MQTT" Version="1.3.2023.401" />
+    <PackageReference Include="NewLife.NetPing" Version="1.1.2023.511" />
+    <PackageReference Include="NewLife.PC" Version="1.0.2023.511" />
+    <PackageReference Include="NewLife.Schneider" Version="1.0.2023.511" />
+    <PackageReference Include="NewLife.Siemens" Version="1.0.2023.511" />
+    <PackageReference Include="NewLife.Stardust" Version="2.8.2023.520-beta0003" />
+    <PackageReference Include="SmartA2" Version="1.0.2023.519-beta0731" />
+    <PackageReference Include="SmartA4" Version="1.0.2023.519" />
+  </ItemGroup>
+
+</Project>

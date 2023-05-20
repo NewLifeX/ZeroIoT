@@ -4,7 +4,7 @@ using NewLife.IoT.ThingModels;
 using NewLife.Log;
 using NewLife.Serialization;
 
-namespace IoTEdge.Services;
+namespace IoTZero.Services;
 
 /// <summary>队列服务</summary>
 public class QueueService

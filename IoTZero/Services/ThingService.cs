@@ -6,7 +6,7 @@ using NewLife.Log;
 using NewLife.Security;
 using XCode;
 
-namespace IoTEdge.Services;
+namespace IoTZero.Services;
 
 /// <summary>物模型服务</summary>
 public class ThingService
@@ -48,9 +48,7 @@ public class ThingService
 
         // 记录数据流水，使用经过处理的属性数值字段
         if (dp != null)
-        {
             _dataService.AddData(dp.DeviceId, timestamp, dp.Name, dp.Value, kind, ip);
-        }
 
         return dp;
     }

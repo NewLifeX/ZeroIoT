@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 using IoT.Data;
-using IoTEdge.Services;
+using IoTZero.Services;
 using Microsoft.AspNetCore.Mvc;
 using NewLife;
 using NewLife.Cube;

@@ -2,7 +2,7 @@
 using NewLife;
 using NewLife.Log;
 
-namespace IoTEdge.Services;
+namespace IoTZero.Services;
 
 /// <summary>数据服务</summary>
 public class DataService

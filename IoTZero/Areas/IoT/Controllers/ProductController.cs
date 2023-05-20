@@ -70,11 +70,10 @@ public class ProductController : EntityController<Product>
         }
 
         var code = p["code"];
-        var protocol = p["protocol"];
 
         var start = p["dtStart"].ToDateTime();
         var end = p["dtEnd"].ToDateTime();
 
-        return Product.Search(code, protocol, start, end, p["Q"], p);
+        return Product.Search(code, start, end, p["Q"], p);
     }
 }

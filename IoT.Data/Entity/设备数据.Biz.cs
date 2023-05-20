@@ -146,21 +146,19 @@ public partial class DeviceData : Entity<DeviceData>
     /// <summary>高级查询</summary>
     /// <param name="deviceId">设备</param>
     /// <param name="name">名称。MQTT的Topic，或者属性名</param>
-    /// <param name="kind">类型。数据来源，如PostProperty/PostData/MqttPostData</param>
     /// <param name="start">创建时间开始</param>
     /// <param name="end">创建时间结束</param>
     /// <param name="key">关键字</param>
     /// <param name="page">分页参数信息。可携带统计和数据权限扩展查询等信息</param>
     /// <returns>实体列表</returns>
-    public static IList<DeviceData> Search(Int32 deviceId, String name, String kind, DateTime start, DateTime end, String key, PageParameter page)
+    public static IList<DeviceData> Search(Int32 deviceId, String name, DateTime start, DateTime end, String key, PageParameter page)
     {
         var exp = new WhereExpression();
 
         if (deviceId >= 0) exp &= _.DeviceId == deviceId;
         if (!name.IsNullOrEmpty()) exp &= _.Name == name;
-        if (!kind.IsNullOrEmpty()) exp &= _.Kind == kind;
         exp &= _.CreateTime.Between(start, end);
-        if (!key.IsNullOrEmpty()) exp &= _.Name.Contains(key) | _.Kind.Contains(key) | _.Value.Contains(key) | _.TraceId.Contains(key) | _.Creator.Contains(key) | _.CreateIP.Contains(key);
+        if (!key.IsNullOrEmpty()) exp &= _.Name.Contains(key) | _.Value.Contains(key) | _.TraceId.Contains(key) | _.Creator.Contains(key) | _.CreateIP.Contains(key);
 
         return FindAll(exp, page);
     }

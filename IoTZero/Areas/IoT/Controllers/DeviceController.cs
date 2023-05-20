@@ -69,9 +69,6 @@ public class DeviceController : EntityController<Device>
     {
         var rs = base.OnInsert(entity);
 
-        // 复制产品属性
-        entity.Fix(true);
-
         entity.Product?.Fix();
         return rs;
     }
@@ -79,8 +76,6 @@ public class DeviceController : EntityController<Device>
     protected override Int32 OnUpdate(Device entity)
     {
         var rs = base.OnUpdate(entity);
-
-        entity.Fix(false);
 
         entity.Product?.Fix();
 

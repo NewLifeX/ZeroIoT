@@ -1,28 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
 using System.Web.Script.Serialization;
 using System.Xml.Serialization;
 using NewLife;
 using NewLife.Data;
-using NewLife.Log;
-using NewLife.Model;
-using NewLife.Reflection;
-using NewLife.Threading;
-using NewLife.Web;
 using XCode;
 using XCode.Cache;
-using XCode.Configuration;
-using XCode.DataAccessLayer;
 using XCode.Membership;
-using XCode.Shards;
 
 namespace IoT.Data;
 
@@ -121,6 +106,10 @@ public partial class Device : Entity<Device>
     /// <summary>产品</summary>
     [Map(nameof(ProductId), typeof(Product), "Id")]
     public String ProductName => Product?.Name;
+
+    /// <summary>设备属性。借助扩展属性缓存</summary>
+    [XmlIgnore, IgnoreDataMember]
+    public IList<DeviceProperty> Properties => Extends.Get(nameof(Properties), k => DeviceProperty.FindAllByDeviceId(Id));
     #endregion
 
     #region 扩展查询
@@ -182,21 +171,19 @@ public partial class Device : Entity<Device>
 
     #region 高级查询
     /// <summary>高级查询</summary>
-    /// <param name="code">编码。设备唯一证书DeviceName，用于设备认证，在注册时由系统生成</param>
     /// <param name="productId">产品</param>
-    /// <param name="uuid">唯一标识。硬件标识，或其它能够唯一区分设备的标记</param>
+    /// <param name="enable"></param>
     /// <param name="start">更新时间开始</param>
     /// <param name="end">更新时间结束</param>
     /// <param name="key">关键字</param>
     /// <param name="page">分页参数信息。可携带统计和数据权限扩展查询等信息</param>
     /// <returns>实体列表</returns>
-    public static IList<Device> Search(String code, Int32 productId, String uuid, DateTime start, DateTime end, String key, PageParameter page)
+    public static IList<Device> Search(Int32 productId, Boolean? enable, DateTime start, DateTime end, String key, PageParameter page)
     {
         var exp = new WhereExpression();
 
-        if (!code.IsNullOrEmpty()) exp &= _.Code == code;
         if (productId >= 0) exp &= _.ProductId == productId;
-        if (!uuid.IsNullOrEmpty()) exp &= _.Uuid == uuid;
+        if (enable != null) exp &= _.Enable == enable;
         exp &= _.UpdateTime.Between(start, end);
         if (!key.IsNullOrEmpty()) exp &= _.Name.Contains(key) | _.Code.Contains(key) | _.Uuid.Contains(key) | _.Location.Contains(key) | _.CreateIP.Contains(key) | _.UpdateIP.Contains(key) | _.Remark.Contains(key);
 

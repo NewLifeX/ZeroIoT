@@ -3,6 +3,7 @@ using NewLife;
 using NewLife.Caching;
 using NewLife.IoT.ThingModels;
 using NewLife.Log;
+using NewLife.Security;
 using XCode;
 
 namespace IoTEdge.Services;
@@ -92,7 +93,7 @@ public class ThingService
         {
             var key = $"{device.Id}###{name}";
             entity = DeviceProperty.GetOrAdd(key,
-                k => DeviceProperty.FindByNameAndDeviceId(name, device.Id),
+                k => DeviceProperty.FindByDeviceIdAndName(device.Id, name),
                 k => new DeviceProperty
                 {
                     DeviceId = device.Id,
@@ -147,6 +148,73 @@ public class ThingService
             _cache.Set(key, entity, 3600);
 
         return entity;
+    }
+    #endregion
+
+    #region 服务调用
+    /// <summary>调用服务</summary>
+    /// <param name="device"></param>
+    /// <param name="command"></param>
+    /// <param name="argument"></param>
+    /// <param name="expire"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public ServiceModel InvokeService(Device device, String command, String argument, DateTime expire)
+    {
+        var traceId = DefaultSpan.Current?.TraceId;
+
+        var log = new ServiceModel
+        {
+            Id = Rand.Next(),
+            Name = command,
+            InputData = argument,
+            Expire = expire,
+            TraceId = traceId,
+        };
+
+        return log;
+    }
+
+    /// <summary>服务响应</summary>
+    /// <param name="device"></param>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public Int32 ServiceReply(Device device, ServiceReplyModel model)
+    {
+        //var log = DeviceServiceLog.FindById(model.Id);
+        //if (log == null) return null;
+
+        //// 防止越权
+        //if (log.DeviceId != device.Id)
+        //    throw new InvalidOperationException($"[{device}]越权访问[{log.DeviceName}]的服务");
+
+        //log.Status = model.Status;
+        //log.OutputData = model.Data;
+        //log.Update();
+
+        // 推入服务响应队列，让服务调用方得到响应
+        _queue.Publish(model);
+
+        return 1;
+    }
+
+    /// <summary>
+    /// 异步调用服务，并返回结果
+    /// </summary>
+    /// <param name="device"></param>
+    /// <param name="command"></param>
+    /// <param name="argument"></param>
+    /// <param name="expire"></param>
+    /// <returns></returns>
+    public async Task<ServiceReplyModel> InvokeAsync(Device device, String command, String argument, DateTime expire)
+    {
+        var log = InvokeService(device, command, argument, expire);
+
+        //var model = log.ToServiceModel();
+        _queueService.Publish(log);
+
+        return await _queueService.ConsumeOneAsync(log.Id);
     }
     #endregion
 }

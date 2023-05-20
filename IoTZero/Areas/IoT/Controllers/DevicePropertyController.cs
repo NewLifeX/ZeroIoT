@@ -79,11 +79,12 @@ public class DevicePropertyController : EntityController<DeviceProperty>
     protected override IEnumerable<DeviceProperty> Search(Pager p)
     {
         var deviceId = p["deviceId"].ToInt(-1);
+        var name = p["name"];
 
         var start = p["dtStart"].ToDateTime();
         var end = p["dtEnd"].ToDateTime();
 
-        return DeviceProperty.Search(deviceId, start, end, p["Q"], p);
+        return DeviceProperty.Search(deviceId, name, start, end, p["Q"], p);
     }
 
     [EntityAuthorize(PermissionFlags.Insert)]

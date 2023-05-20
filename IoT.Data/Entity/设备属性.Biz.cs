@@ -141,6 +141,20 @@ public partial class DeviceProperty : Entity<DeviceProperty>
 
         return Find(_.DeviceId == deviceId & _.Name == name);
     }
+
+    /// <summary>根据设备查找</summary>
+    /// <param name="deviceId">设备</param>
+    /// <returns>实体对象</returns>
+    public static IList<DeviceProperty> FindAllByDeviceId(Int32 deviceId)
+    {
+        var list = new List<DeviceProperty>();
+        if (deviceId <= 0) return list;
+
+        // 实体缓存
+        if (Meta.Session.Count < 1000) return Meta.Cache.FindAll(e => e.DeviceId == deviceId);
+
+        return FindAll(_.DeviceId == deviceId);
+    }
     #endregion
 
     #region 高级查询

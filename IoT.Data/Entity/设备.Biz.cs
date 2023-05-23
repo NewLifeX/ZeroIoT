@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Web.Script.Serialization;
 using System.Xml.Serialization;
 using NewLife;
+using NewLife.Common;
 using NewLife.Data;
 using NewLife.IoT.Models;
+using NewLife.Log;
+using NewLife.Remoting;
 using XCode;
 using XCode.Cache;
 using XCode.Membership;
@@ -18,13 +22,20 @@ public partial class Device : Entity<Device>
     static Device()
     {
         // 累加字段，生成 Update xx Set Count=Count+1234 Where xxx
-        //var df = Meta.Factory.AdditionalFields;
-        //df.Add(nameof(ProductId));
+        var df = Meta.Factory.AdditionalFields;
+        df.Add(nameof(Logins));
+        df.Add(nameof(OnlineTime));
 
         // 过滤器 UserModule、TimeModule、IPModule
         Meta.Modules.Add<UserModule>();
         Meta.Modules.Add<TimeModule>();
         Meta.Modules.Add<IPModule>();
+
+        var sc = Meta.SingleCache;
+        sc.Expire = 20 * 60;
+        sc.MaxEntity = 200_000;
+        sc.FindSlaveKeyMethod = k => Find(_.Code == k);
+        sc.GetSlaveKeyMethod = e => e.Code;
     }
 
     /// <summary>验证并修补数据，通过抛出异常的方式提示验证失败。</summary>
@@ -34,69 +45,50 @@ public partial class Device : Entity<Device>
         // 如果没有脏数据，则不需要进行任何处理
         if (!HasDirty) return;
 
+        if (ProductId <= 0) throw new ApiException(500, "产品Id错误");
+
+        var product = Product.FindById(ProductId);
+        if (product == null) throw new ApiException(500, "产品Id错误");
+
+        var len = _.IP.Length;
+        if (len > 0 && !IP.IsNullOrEmpty() && IP.Length > len) IP = IP[..len];
+
+        len = _.Uuid.Length;
+        if (len > 0 && !Uuid.IsNullOrEmpty() && Uuid.Length > len) Uuid = Uuid[..len];
+
         // 建议先调用基类方法，基类方法会做一些统一处理
         base.Valid(isNew);
 
-        // 在新插入数据或者修改了指定字段时进行修正
-        // 处理当前已登录用户信息，可以由UserModule过滤器代劳
-        /*var user = ManageProvider.User;
-        if (user != null)
-        {
-            if (isNew && !Dirtys[nameof(CreateUserId)]) CreateUserId = user.ID;
-            if (!Dirtys[nameof(UpdateUserId)]) UpdateUserId = user.ID;
-        }*/
-        //if (isNew && !Dirtys[nameof(CreateTime)]) CreateTime = DateTime.Now;
-        //if (!Dirtys[nameof(UpdateTime)]) UpdateTime = DateTime.Now;
-        //if (isNew && !Dirtys[nameof(CreateIP)]) CreateIP = ManageProvider.UserHost;
-        //if (!Dirtys[nameof(UpdateIP)]) UpdateIP = ManageProvider.UserHost;
+        // 自动编码
+        if (Code.IsNullOrEmpty()) Code = PinYin.GetFirst(Name);
+        CheckExist(nameof(Code));
 
-        // 检查唯一索引
-        // CheckExist(isNew, nameof(Code));
+        if (Period <= 0) Period = 60;
+        if (PollingTime == 0) PollingTime = 1000;
     }
 
-    ///// <summary>首次连接数据库时初始化数据，仅用于实体类重载，用户不应该调用该方法</summary>
-    //[EditorBrowsable(EditorBrowsableState.Never)]
-    //protected override void InitData()
-    //{
-    //    // InitData一般用于当数据表没有数据时添加一些默认数据，该实体类的任何第一次数据库操作都会触发该方法，默认异步调用
-    //    if (Meta.Session.Count > 0) return;
+    /// <summary>首次连接数据库时初始化数据，仅用于实体类重载，用户不应该调用该方法</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    protected override void InitData()
+    {
+        // InitData一般用于当数据表没有数据时添加一些默认数据，该实体类的任何第一次数据库操作都会触发该方法，默认异步调用
+        if (Meta.Session.Count > 0) return;
 
-    //    if (XTrace.Debug) XTrace.WriteLine("开始初始化Device[设备]数据……");
+        if (XTrace.Debug) XTrace.WriteLine("开始初始化Device[设备]数据……");
 
-    //    var entity = new Device();
-    //    entity.Name = "abc";
-    //    entity.Code = "abc";
-    //    entity.ProductId = 0;
-    //    entity.Enable = true;
-    //    entity.Online = true;
-    //    entity.Uuid = "abc";
-    //    entity.Location = "abc";
-    //    entity.PollingTime = 0;
-    //    entity.CreateUserId = 0;
-    //    entity.CreateTime = DateTime.Now;
-    //    entity.CreateIP = "abc";
-    //    entity.UpdateUserId = 0;
-    //    entity.UpdateTime = DateTime.Now;
-    //    entity.UpdateIP = "abc";
-    //    entity.Remark = "abc";
-    //    entity.Insert();
+        var entity = new Device
+        {
+            Name = "测试设备",
+            Code = "abc",
+            Secret = "abc",
+            ProductId = 1,
+            GroupId = 1,
+            Enable = true,
+        };
+        entity.Insert();
 
-    //    if (XTrace.Debug) XTrace.WriteLine("完成初始化Device[设备]数据！");
-    //}
-
-    ///// <summary>已重载。基类先调用Valid(true)验证数据，然后在事务保护内调用OnInsert</summary>
-    ///// <returns></returns>
-    //public override Int32 Insert()
-    //{
-    //    return base.Insert();
-    //}
-
-    ///// <summary>已重载。在事务保护范围内处理业务，位于Valid之后</summary>
-    ///// <returns></returns>
-    //protected override Int32 OnDelete()
-    //{
-    //    return base.OnDelete();
-    //}
+        if (XTrace.Debug) XTrace.WriteLine("完成初始化Device[设备]数据！");
+    }
     #endregion
 
     #region 扩展属性
@@ -140,7 +132,8 @@ public partial class Device : Entity<Device>
         // 实体缓存
         if (Meta.Session.Count < 1000) return Meta.Cache.Find(e => e.Code.EqualIgnoreCase(code));
 
-        return Find(_.Code == code);
+        //return Find(_.Code == code);
+        return Meta.SingleCache.GetItemWithSlaveKey(code) as Device;
     }
 
     /// <summary>根据产品查找</summary>
@@ -173,17 +166,19 @@ public partial class Device : Entity<Device>
     #region 高级查询
     /// <summary>高级查询</summary>
     /// <param name="productId">产品</param>
+    /// <param name="groupId"></param>
     /// <param name="enable"></param>
     /// <param name="start">更新时间开始</param>
     /// <param name="end">更新时间结束</param>
     /// <param name="key">关键字</param>
     /// <param name="page">分页参数信息。可携带统计和数据权限扩展查询等信息</param>
     /// <returns>实体列表</returns>
-    public static IList<Device> Search(Int32 productId, Boolean? enable, DateTime start, DateTime end, String key, PageParameter page)
+    public static IList<Device> Search(Int32 productId, Int32 groupId, Boolean? enable, DateTime start, DateTime end, String key, PageParameter page)
     {
         var exp = new WhereExpression();
 
         if (productId >= 0) exp &= _.ProductId == productId;
+        if (groupId >= 0) exp &= _.GroupId == groupId;
         if (enable != null) exp &= _.Enable == enable;
         exp &= _.UpdateTime.Between(start, end);
         if (!key.IsNullOrEmpty()) exp &= _.Name.Contains(key) | _.Code.Contains(key) | _.Uuid.Contains(key) | _.Location.Contains(key) | _.CreateIP.Contains(key) | _.UpdateIP.Contains(key) | _.Remark.Contains(key);
@@ -200,6 +195,20 @@ public partial class Device : Entity<Device>
     /// <summary>获取唯一标识列表，字段缓存10分钟，分组统计数据最多的前20种，用于魔方前台下拉选择</summary>
     /// <returns></returns>
     public static IDictionary<String, String> GetUuidList() => _UuidCache.FindAllName();
+
+    /// <summary>
+    /// 根据设备分组来分组
+    /// </summary>
+    /// <returns></returns>
+    public static IList<Device> SearchGroupByGroup()
+    {
+        var selects = _.Id.Count();
+        selects &= _.Enable.SumCase(1, "Activations");
+        selects &= _.Online.SumCase(1, "Onlines");
+        selects &= _.GroupId;
+
+        return FindAll(_.GroupId.GroupBy(), null, selects, 0, 0);
+    }
     #endregion
 
     #region 业务操作

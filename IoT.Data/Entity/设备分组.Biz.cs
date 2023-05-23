@@ -15,6 +15,7 @@ using NewLife.Data;
 using NewLife.Log;
 using NewLife.Model;
 using NewLife.Reflection;
+using NewLife.Remoting;
 using NewLife.Threading;
 using NewLife.Web;
 using XCode;
@@ -51,64 +52,30 @@ public partial class DeviceGroup : Entity<DeviceGroup>
         // 建议先调用基类方法，基类方法会做一些统一处理
         base.Valid(isNew);
 
-        // 在新插入数据或者修改了指定字段时进行修正
-        // 处理当前已登录用户信息，可以由UserModule过滤器代劳
-        /*var user = ManageProvider.User;
-        if (user != null)
-        {
-            if (isNew && !Dirtys[nameof(CreateUserId)]) CreateUserId = user.ID;
-            if (!Dirtys[nameof(UpdateUserId)]) UpdateUserId = user.ID;
-        }*/
-        //if (isNew && !Dirtys[nameof(CreateTime)]) CreateTime = DateTime.Now;
-        //if (!Dirtys[nameof(UpdateTime)]) UpdateTime = DateTime.Now;
-        //if (isNew && !Dirtys[nameof(CreateIP)]) CreateIP = ManageProvider.UserHost;
-        //if (!Dirtys[nameof(UpdateIP)]) UpdateIP = ManageProvider.UserHost;
-
-        // 检查唯一索引
-        // CheckExist(isNew, nameof(ParentId), nameof(Name));
+        if (Name.IsNullOrEmpty()) throw new ApiException(500, "名称不能为空");
     }
 
-    ///// <summary>首次连接数据库时初始化数据，仅用于实体类重载，用户不应该调用该方法</summary>
-    //[EditorBrowsable(EditorBrowsableState.Never)]
-    //protected override void InitData()
-    //{
-    //    // InitData一般用于当数据表没有数据时添加一些默认数据，该实体类的任何第一次数据库操作都会触发该方法，默认异步调用
-    //    if (Meta.Session.Count > 0) return;
+    /// <summary>首次连接数据库时初始化数据，仅用于实体类重载，用户不应该调用该方法</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    protected override void InitData()
+    {
+        // InitData一般用于当数据表没有数据时添加一些默认数据，该实体类的任何第一次数据库操作都会触发该方法，默认异步调用
+        if (Meta.Session.Count > 0) return;
 
-    //    if (XTrace.Debug) XTrace.WriteLine("开始初始化DeviceGroup[设备分组]数据……");
+        if (XTrace.Debug) XTrace.WriteLine("开始初始化DeviceGroup[设备分组]数据……");
 
-    //    var entity = new DeviceGroup();
-    //    entity.Name = "abc";
-    //    entity.ParentId = 0;
-    //    entity.Sort = 0;
-    //    entity.Devices = 0;
-    //    entity.Activations = 0;
-    //    entity.Onlines = 0;
-    //    entity.CreateUserId = 0;
-    //    entity.CreateTime = DateTime.Now;
-    //    entity.CreateIP = "abc";
-    //    entity.UpdateUserId = 0;
-    //    entity.UpdateTime = DateTime.Now;
-    //    entity.UpdateIP = "abc";
-    //    entity.Remark = "abc";
-    //    entity.Insert();
+        var entity = new DeviceGroup
+        {
+            Name = "默认分组",
+            ParentId = 0,
+            Devices = 0,
+            Activations = 0,
+            Onlines = 0,
+        };
+        entity.Insert();
 
-    //    if (XTrace.Debug) XTrace.WriteLine("完成初始化DeviceGroup[设备分组]数据！");
-    //}
-
-    ///// <summary>已重载。基类先调用Valid(true)验证数据，然后在事务保护内调用OnInsert</summary>
-    ///// <returns></returns>
-    //public override Int32 Insert()
-    //{
-    //    return base.Insert();
-    //}
-
-    ///// <summary>已重载。在事务保护范围内处理业务，位于Valid之后</summary>
-    ///// <returns></returns>
-    //protected override Int32 OnDelete()
-    //{
-    //    return base.OnDelete();
-    //}
+        if (XTrace.Debug) XTrace.WriteLine("完成初始化DeviceGroup[设备分组]数据！");
+    }
     #endregion
 
     #region 扩展属性
@@ -190,5 +157,25 @@ public partial class DeviceGroup : Entity<DeviceGroup>
     #endregion
 
     #region 业务操作
+
+    public static Int32 Refresh()
+    {
+        var count = 0;
+        var groups = FindAll();
+        var list = Device.SearchGroupByGroup();
+        foreach (var item in list)
+        {
+            var gb = groups.FirstOrDefault(e => e.Id == item.GroupId);
+            if (gb != null)
+            {
+                gb.Devices = item.Id;
+                gb.Activations = item["Activations"].ToInt();
+                gb.Onlines = item["Onlines"].ToInt();
+                count += gb.Update();
+            }
+        }
+
+        return count;
+    }
     #endregion
 }

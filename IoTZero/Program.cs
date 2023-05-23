@@ -1,7 +1,9 @@
-﻿using IoTZero.Services;
+﻿using IoTZero;
+using IoTZero.Services;
 using NewLife.Caching;
 using NewLife.Cube;
 using NewLife.Log;
+using NewLife.Security;
 using XCode;
 
 // 日志输出到控制台，并拦截全局异常
@@ -38,16 +40,24 @@ if (set3.IsNew)
     set3.Save();
 }
 
-// 注册服务
+// 系统设置
+services.AddSingleton(IoTSetting.Current);
+
+// 逐个注册每一个用到的服务，必须做到清晰明了
+services.AddSingleton<IPasswordProvider>(new SaltPasswordProvider { Algorithm = "md5" });
+
 services.AddSingleton<ThingService>();
 services.AddSingleton<DataService>();
 services.AddSingleton<QueueService>();
+services.AddSingleton<MyDeviceService>();
 
 services.AddHttpClient("hc", e => e.Timeout = TimeSpan.FromSeconds(5));
 
 services.AddSingleton<ICache, MemoryCache>();
 
 // 后台服务
+services.AddHostedService<ShardTableService>();
+services.AddHostedService<DeviceOnlineService>();
 
 services.AddControllersWithViews();
 
@@ -73,11 +83,10 @@ app.UseCube(app.Environment);
 
 app.UseAuthorization();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=CubeHome}/{action=Index}/{id?}");
-});
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=CubeHome}/{action=Index}/{id?}");
+
+app.RegisterService("AlarmServer", null, app.Environment.EnvironmentName);
 
 app.Run();

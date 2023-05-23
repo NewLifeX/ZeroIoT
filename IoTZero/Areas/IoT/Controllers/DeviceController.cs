@@ -54,6 +54,7 @@ public class DeviceController : EntityController<Device>
         }
 
         var productId = p["productId"].ToInt(-1);
+        var groupId = p["groupId"].ToInt(-1);
         var enable = p["enable"]?.ToBoolean();
 
         var start = p["dtStart"].ToDateTime();
@@ -62,7 +63,7 @@ public class DeviceController : EntityController<Device>
         //// 如果没有指定产品和主设备，则过滤掉子设备
         //if (productId < 0 && parentId < 0) parentId = 0;
 
-        return Device.Search(productId, enable, start, end, p["Q"], p);
+        return Device.Search(productId, groupId, enable, start, end, p["Q"], p);
     }
 
     protected override Int32 OnInsert(Device entity)

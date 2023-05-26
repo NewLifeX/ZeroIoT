@@ -1,4 +1,5 @@
-﻿using NewLife;
+﻿using IoTEdge;
+using NewLife;
 using NewLife.Log;
 using NewLife.Model;
 using NewLife.MQTT;
@@ -22,7 +23,7 @@ InitMqtt(services, star?.Tracer);
 
 // 注册后台任务 IHostedService
 var host = services.BuildHost();
-//host.Add<Worker>();
+host.Add<EdgeService>();
 
 // 异步阻塞，友好退出
 await host.RunAsync();

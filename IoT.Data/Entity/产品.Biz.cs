@@ -52,8 +52,8 @@ public partial class Product : Entity<Product>
 
         var entity = new Product
         {
-            Name = "测试产品",
-            Code = "test",
+            Name = "边缘网关",
+            Code = "EdgeGateway",
             Enable = true,
         };
         entity.Insert();

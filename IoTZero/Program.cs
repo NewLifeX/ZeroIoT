@@ -59,6 +59,9 @@ services.AddSingleton<ICache, MemoryCache>();
 services.AddHostedService<ShardTableService>();
 services.AddHostedService<DeviceOnlineService>();
 
+// 启用接口响应压缩
+services.AddResponseCompression();
+
 services.AddControllersWithViews();
 
 // 引入魔方
@@ -77,6 +80,13 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 else
     app.UseExceptionHandler("/CubeHome/Error");
+
+app.UseResponseCompression();
+
+app.UseWebSockets(new WebSocketOptions()
+{
+    KeepAliveInterval = TimeSpan.FromSeconds(60),
+});
 
 // 使用魔方
 app.UseCube(app.Environment);

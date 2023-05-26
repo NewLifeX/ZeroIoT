@@ -141,6 +141,31 @@ public partial class DeviceHistory : Entity<DeviceHistory>
 
         return FindAll(_.DeviceId == deviceId & _.Id == id);
     }
+
+    /// <summary>根据设备查找</summary>
+    /// <param name="deviceId">设备</param>
+    /// <returns>实体列表</returns>
+    public static IList<DeviceHistory> FindAllByDeviceId(Int32 deviceId)
+    {
+        if (deviceId <= 0) return new List<DeviceHistory>();
+
+        // 实体缓存
+        if (Meta.Session.Count < 1000) return Meta.Cache.FindAll(e => e.DeviceId == deviceId);
+
+        return FindAll(_.DeviceId == deviceId);
+    }
+
+    /// <summary>根据设备、操作查找</summary>
+    /// <param name="deviceId">设备</param>
+    /// <param name="action">操作</param>
+    /// <returns>实体列表</returns>
+    public static IList<DeviceHistory> FindAllByDeviceIdAndAction(Int32 deviceId, String action)
+    {
+        // 实体缓存
+        if (Meta.Session.Count < 1000) return Meta.Cache.FindAll(e => e.DeviceId == deviceId && e.Action.EqualIgnoreCase(action));
+
+        return FindAll(_.DeviceId == deviceId & _.Action == action);
+    }
     #endregion
 
     #region 高级查询
@@ -181,7 +206,6 @@ public partial class DeviceHistory : Entity<DeviceHistory>
     /// <returns></returns>
     public static Int32 DeleteBefore(DateTime date) => Delete(_.Id < Meta.Factory.Snow.GetId(date));
 
-    private static ICache _cache = new MemoryCache();
     /// <summary>创建日志</summary>
     /// <param name="device"></param>
     /// <param name="action"></param>

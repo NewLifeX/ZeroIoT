@@ -5,11 +5,14 @@ using IoTZero.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NewLife;
+using NewLife.Http;
 using NewLife.IoT.Models;
 using NewLife.IoT.ThingModels;
 using NewLife.Log;
 using NewLife.Remoting;
 using NewLife.Serialization;
+using WebSocket = System.Net.WebSockets.WebSocket;
+using WebSocketMessageType = System.Net.WebSockets.WebSocketMessageType;
 
 namespace IoTZero.Controllers;
 
@@ -126,14 +129,10 @@ public class DeviceController : BaseController
 
     private async Task Handle(WebSocket socket, String token)
     {
-        var device = Device;
-        if (device == null) throw new InvalidOperationException("未登录！");
-
-        XTrace.WriteLine("WebSocket连接 {0}", device);
-        _deviceService.WriteHistory(device, "WebSocket连接", true, socket.State + "", UserHost);
-
+        var device = Device ?? throw new InvalidOperationException("未登录！");
         var source = new CancellationTokenSource();
-        _ = Task.Run(() => ConsumeMessage(socket, device, UserHost, source));
+        var queue = _queue.GetQueue(device.Code);
+        _ = Task.Run(() => socket.ConsumeAndPushAsync(queue, source));
         try
         {
             var buf = new Byte[4 * 1024];
@@ -141,17 +140,9 @@ public class DeviceController : BaseController
             {
                 var data = await socket.ReceiveAsync(new ArraySegment<Byte>(buf), default);
                 if (data.MessageType == WebSocketMessageType.Close) break;
-                if (data.MessageType == WebSocketMessageType.Text)
-                {
-                    var str = buf.ToStr(null, 0, data.Count);
-                    XTrace.WriteLine("WebSocket接收 {0} {1}", device, str);
-                    _deviceService.WriteHistory(device, "WebSocket接收", true, str, UserHost);
-                }
             }
 
             source.Cancel();
-            XTrace.WriteLine("WebSocket断开 {0}", device);
-            _deviceService.WriteHistory(device, "WebSocket断开", true, socket.State + "", UserHost);
 
             await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "finish", default);
         }
@@ -159,55 +150,6 @@ public class DeviceController : BaseController
         {
             XTrace.WriteLine("WebSocket异常 {0}", device);
             XTrace.WriteLine(ex.Message);
-        }
-        finally
-        {
-            source.Cancel();
-        }
-    }
-
-    private async Task ConsumeMessage(WebSocket socket, Device device, String ip, CancellationTokenSource source)
-    {
-        DefaultSpan.Current = null;
-        var cancellationToken = source.Token;
-        var queue = _queue.GetQueue(device.Code);
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
-            {
-                ISpan span = null;
-                var mqMsg = await queue.TakeOneAsync(30);
-                if (mqMsg != null)
-                {
-                    // 埋点
-                    span = _tracer?.NewSpan($"redismq:ServiceQueue", mqMsg);
-
-                    // 解码
-                    var dic = JsonParser.Decode(mqMsg);
-                    span?.Detach(dic);
-                    var msg = JsonHelper.Convert<ServiceModel>(dic);
-
-                    if (msg == null || msg.Id == 0 || msg.Expire.Year > 2000 && msg.Expire < DateTime.Now)
-                        _deviceService.WriteHistory(device, "WebSocket发送", false, "消息无效。" + mqMsg, ip);
-                    else
-                    {
-                        _deviceService.WriteHistory(device, "WebSocket发送", true, mqMsg, ip);
-
-                        // 向客户端传递埋点信息，构建完整调用链
-                        msg.TraceId = span + "";
-
-                        await socket.SendAsync(msg.ToJson().GetBytes(), WebSocketMessageType.Text, true, cancellationToken);
-                    }
-                }
-                else
-                    await Task.Delay(100, cancellationToken);
-                span?.Dispose();
-            }
-        }
-        catch (TaskCanceledException) { }
-        catch (Exception ex)
-        {
-            XTrace.WriteException(ex);
         }
         finally
         {

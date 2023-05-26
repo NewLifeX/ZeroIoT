@@ -6,7 +6,7 @@ using XCode.Membership;
 namespace IoTZero.Areas.IoT.Controllers;
 
 [IoTArea]
-[Menu(0, false)]
+[Menu(60, true)]
 public class DeviceHistoryController : ReadOnlyEntityController<DeviceHistory>
 {
     protected override IEnumerable<DeviceHistory> Search(Pager p)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Web.Script.Serialization;
@@ -123,6 +123,43 @@ public partial class DeviceData : Entity<DeviceData>
         if (Meta.Session.Count < 1000) return Meta.Cache.FindAll(e => e.DeviceId == deviceId && e.Id == id);
 
         return FindAll(_.DeviceId == deviceId & _.Id == id);
+    }
+
+    /// <summary>根据设备查找</summary>
+    /// <param name="deviceId">设备</param>
+    /// <returns>实体列表</returns>
+    public static IList<DeviceData> FindAllByDeviceId(Int32 deviceId)
+    {
+        if (deviceId <= 0) return new List<DeviceData>();
+
+        // 实体缓存
+        if (Meta.Session.Count < 1000) return Meta.Cache.FindAll(e => e.DeviceId == deviceId);
+
+        return FindAll(_.DeviceId == deviceId);
+    }
+
+    /// <summary>根据设备、名称查找</summary>
+    /// <param name="deviceId">设备</param>
+    /// <param name="name">名称</param>
+    /// <returns>实体列表</returns>
+    public static IList<DeviceData> FindAllByDeviceIdAndName(Int32 deviceId, String name)
+    {
+        // 实体缓存
+        if (Meta.Session.Count < 1000) return Meta.Cache.FindAll(e => e.DeviceId == deviceId && e.Name.EqualIgnoreCase(name));
+
+        return FindAll(_.DeviceId == deviceId & _.Name == name);
+    }
+
+    /// <summary>根据设备、类型查找</summary>
+    /// <param name="deviceId">设备</param>
+    /// <param name="kind">类型</param>
+    /// <returns>实体列表</returns>
+    public static IList<DeviceData> FindAllByDeviceIdAndKind(Int32 deviceId, String kind)
+    {
+        // 实体缓存
+        if (Meta.Session.Count < 1000) return Meta.Cache.FindAll(e => e.DeviceId == deviceId && e.Kind.EqualIgnoreCase(kind));
+
+        return FindAll(_.DeviceId == deviceId & _.Kind == kind);
     }
     #endregion
 

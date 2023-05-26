@@ -107,6 +107,8 @@ public abstract class BaseController : ControllerBase, IActionFilter
         var child = Device.FindByCode(deviceCode);
 
         //dv = dv.Childs.FirstOrDefault(e => e.Code == deviceCode);
-        return child ?? throw new Exception($"非法设备编码，[{deviceCode}]并非当前登录设备[{Device}]的子设备");
+        if (child == null || child.Id != dv.Id) throw new Exception($"非法设备编码，[{deviceCode}]并非当前登录设备[{Device}]的子设备");
+
+        return child;
     }
 }

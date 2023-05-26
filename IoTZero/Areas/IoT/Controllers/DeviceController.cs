@@ -9,7 +9,7 @@ using XCode.Membership;
 namespace IoTZero.Areas.IoT.Controllers;
 
 [IoTArea]
-[DisplayName("设备管理")]
+//[DisplayName("设备管理")]
 [Menu(80, true, Icon = "fa-mobile")]
 public class DeviceController : EntityController<Device>
 {

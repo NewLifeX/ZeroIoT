@@ -1,13 +1,11 @@
 ﻿using IoT.Data;
 using NewLife;
 using NewLife.Caching;
-using NewLife.Data;
 using NewLife.IoT.ThingModels;
 using NewLife.Log;
-using NewLife.Reflection;
 using NewLife.Security;
 using NewLife.Serialization;
-using XCode;
+using Stardust.Services;
 
 namespace IoTZero.Services;
 
@@ -18,21 +16,22 @@ public class ThingService
     private readonly QueueService _queueService;
     private readonly MyDeviceService _deviceService;
     private readonly ITracer _tracer;
-    private static readonly ICache _cache = new MemoryCache();
+    private readonly ICache _cache;
 
     /// <summary>
     /// 实例化物模型服务
     /// </summary>
     /// <param name="dataService"></param>
-    /// <param name="queue"></param>
-    /// <param name="ruleService"></param>
-    /// <param name="segmentService"></param>
+    /// <param name="queueService"></param>
+    /// <param name="deviceService"></param>
+    /// <param name="cacheService"></param>
     /// <param name="tracer"></param>
-    public ThingService(DataService dataService, QueueService queueService, MyDeviceService deviceService, ITracer tracer)
+    public ThingService(DataService dataService, QueueService queueService, MyDeviceService deviceService, CacheService cacheService, ITracer tracer)
     {
         _dataService = dataService;
         _queueService = queueService;
         _deviceService = deviceService;
+        _cache = cacheService.InnerCache;
         _tracer = tracer;
     }
 
@@ -202,7 +201,7 @@ public class ThingService
     /// <returns></returns>
     private DeviceProperty GetProperty(Device device, String name)
     {
-        var key = $"{device.Id}###{name}";
+        var key = $"DeviceProperty:{device.Id}:{name}";
         if (_cache.TryGetValue<DeviceProperty>(key, out var property)) return property;
 
         using var span = _tracer?.NewSpan(nameof(GetProperty), $"{device.Id}-{name}");

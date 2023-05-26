@@ -1,12 +1,11 @@
-﻿using System.ComponentModel;
-using IoT.Data;
+﻿using IoT.Data;
 using NewLife.Cube;
 using NewLife.Web;
 
 namespace IoTZero.Areas.IoT.Controllers;
 
 [IoTArea]
-[Menu(90, true, Icon = "fa-product-hunt")]
+[Menu(30, true, Icon = "fa-product-hunt")]
 public class ProductController : EntityController<Product>
 {
     static ProductController()

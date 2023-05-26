@@ -2,15 +2,13 @@
 using IoT.Data;
 using NewLife;
 using NewLife.Caching;
-using NewLife.IoT.Drivers;
 using NewLife.IoT.Models;
-using NewLife.IoT.ThingModels;
 using NewLife.Log;
 using NewLife.Remoting;
 using NewLife.Security;
 using NewLife.Serialization;
 using NewLife.Web;
-using XCode;
+using Stardust.Services;
 
 namespace IoTZero.Services;
 
@@ -20,7 +18,7 @@ public class MyDeviceService
     /// <summary>节点引用，令牌无效时使用</summary>
     public Device Current { get; set; }
 
-    private static readonly ICache _cache = new MemoryCache();
+    private readonly ICache _cache;
     private readonly IPasswordProvider _passwordProvider;
     private readonly DataService _dataService;
     private readonly IoTSetting _setting;
@@ -31,12 +29,14 @@ public class MyDeviceService
     /// </summary>
     /// <param name="passwordProvider"></param>
     /// <param name="dataService"></param>
+    /// <param name="cacheService"></param>
     /// <param name="setting"></param>
     /// <param name="tracer"></param>
-    public MyDeviceService(IPasswordProvider passwordProvider, DataService dataService, IoTSetting setting, ITracer tracer)
+    public MyDeviceService(IPasswordProvider passwordProvider, DataService dataService, CacheService cacheService, IoTSetting setting, ITracer tracer)
     {
         _passwordProvider = passwordProvider;
         _dataService = dataService;
+        _cache = cacheService.Cache;
         _setting = setting;
         _tracer = tracer;
     }

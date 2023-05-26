@@ -7,7 +7,7 @@ using XCode.Membership;
 namespace IoTZero.Areas.IoT.Controllers;
 
 /// <summary>设备在线</summary>
-[Menu(40, true, Icon = "fa-table")]
+[Menu(70, true, Icon = "fa-table")]
 [IoTArea]
 public class DeviceOnlineController : EntityController<DeviceOnline>
 {

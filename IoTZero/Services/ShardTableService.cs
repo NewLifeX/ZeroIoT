@@ -2,7 +2,6 @@
 using NewLife;
 using NewLife.Log;
 using NewLife.Threading;
-using XCode;
 using XCode.DataAccessLayer;
 using XCode.Shards;
 

@@ -15,17 +15,17 @@ public class IoTSetting : Config<IoTSetting>
     #endregion
 
     #region 属性
-    /// <summary>MQTT服务端口。默认1883</summary>
-    [Description("MQTT服务端口。默认1883")]
-    public Int32 MqttPort { get; set; } = 1883;
+    ///// <summary>MQTT服务端口。默认1883</summary>
+    //[Description("MQTT服务端口。默认1883")]
+    //public Int32 MqttPort { get; set; } = 1883;
 
-    /// <summary>MQTT证书地址。设置了才启用安全连接，默认为空</summary>
-    [Description("MQTT证书地址。设置了才启用安全连接，默认为空")]
-    public String MqttCertPath { get; set; }
+    ///// <summary>MQTT证书地址。设置了才启用安全连接，默认为空</summary>
+    //[Description("MQTT证书地址。设置了才启用安全连接，默认为空")]
+    //public String MqttCertPath { get; set; }
 
-    /// <summary>MMQTT证书密码</summary>
-    [Description("MQTT证书密码")]
-    public String MqttCertPassword { get; set; }
+    ///// <summary>MMQTT证书密码</summary>
+    //[Description("MQTT证书密码")]
+    //public String MqttCertPassword { get; set; }
     #endregion
 
     #region 设备管理
@@ -48,11 +48,6 @@ public class IoTSetting : Config<IoTSetting>
     [Description("自动注册。允许客户端自动注册，默认true")]
     [Category("设备管理")]
     public Boolean AutoRegister { get; set; } = true;
-
-    /// <summary>启用子设备在线。子设备上线时写入在线表，默认false</summary>
-    [Description("启用子设备在线。子设备上线时写入在线表，默认false")]
-    [Category("设备管理")]
-    public Boolean UseChildDeviceOnline { get; set; }
     #endregion
 
     #region 数据存储

@@ -1,6 +1,4 @@
-﻿using System.Net.WebSockets;
-using IoT.Data;
-using IoTZero.Common;
+﻿using IoTZero.Common;
 using IoTZero.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,9 +8,7 @@ using NewLife.IoT.Models;
 using NewLife.IoT.ThingModels;
 using NewLife.Log;
 using NewLife.Remoting;
-using NewLife.Serialization;
 using WebSocket = System.Net.WebSockets.WebSocket;
-using WebSocketMessageType = System.Net.WebSockets.WebSocketMessageType;
 
 namespace IoTZero.Controllers;
 

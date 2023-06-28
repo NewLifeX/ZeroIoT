@@ -29,14 +29,14 @@ public class MyDeviceService
     /// </summary>
     /// <param name="passwordProvider"></param>
     /// <param name="dataService"></param>
-    /// <param name="cacheService"></param>
+    /// <param name="cacheProvider"></param>
     /// <param name="setting"></param>
     /// <param name="tracer"></param>
-    public MyDeviceService(IPasswordProvider passwordProvider, DataService dataService, CacheService cacheService, IoTSetting setting, ITracer tracer)
+    public MyDeviceService(IPasswordProvider passwordProvider, DataService dataService, ICacheProvider cacheProvider, IoTSetting setting, ITracer tracer)
     {
         _passwordProvider = passwordProvider;
         _dataService = dataService;
-        _cache = cacheService.Cache;
+        _cache = cacheProvider.InnerCache;
         _setting = setting;
         _tracer = tracer;
     }
@@ -99,6 +99,8 @@ public class MyDeviceService
         var olt = GetOnline(dv, ip) ?? CreateOnline(dv, ip);
         olt.Save(inf, null, tm.AccessToken);
 
+        //SetChildOnline(dv, ip);
+
         // 登录历史
         WriteHistory(dv, source + "设备鉴权", true, $"[{dv.Name}/{dv.Code}]鉴权成功 " + inf.ToJson(false, false, false), ip);
 
@@ -113,8 +115,7 @@ public class MyDeviceService
         if (!dv.Enable) rs.Token = null;
 
         // 动态注册，下发节点证书
-        if (autoReg)
-            rs.Secret = dv.Secret;
+        if (autoReg) rs.Secret = dv.Secret;
 
         rs.Code = dv.Code;
 
@@ -156,6 +157,11 @@ public class MyDeviceService
         var product = Product.FindByCode(inf.ProductKey);
         if (product == null || !product.Enable)
             throw new ApiException(13, $"无效产品[{inf.ProductKey}]！");
+        //if (!product.Secret.IsNullOrEmpty() && !_passwordProvider.Verify(product.Secret, inf.ProductSecret))
+        //    throw new ApiException(13, $"非法产品[{product}]！");
+
+        //// 检查白名单
+        //if (!product.IsMatchWhiteIP(ip)) throw new ApiException(13, "非法来源，禁止注册");
 
         var code = inf.Code;
         if (code.IsNullOrEmpty()) code = Rand.NextString(8);
@@ -213,7 +219,7 @@ public class MyDeviceService
                 device.Logout();
             }
 
-            DeviceOnlineService.CheckOffline(device, "注销");
+            //DeviceOnlineService.CheckOffline(device, "注销");
         }
 
         return device;

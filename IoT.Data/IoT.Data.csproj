@@ -34,8 +34,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NewLife.IoT" Version="1.8.2023.511" />
-    <PackageReference Include="NewLife.XCode" Version="11.8.2023.511-beta0917" />
+    <PackageReference Include="NewLife.IoT" Version="1.8.2023.611-beta1629" />
+    <PackageReference Include="NewLife.XCode" Version="11.8.2023.628-beta0652" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,11 +1,12 @@
 ﻿using IoT.Data;
 using NewLife;
 using NewLife.Caching;
+using NewLife.Data;
+using NewLife.IoT.Models;
 using NewLife.IoT.ThingModels;
 using NewLife.Log;
 using NewLife.Security;
 using NewLife.Serialization;
-using Stardust.Services;
 
 namespace IoTZero.Services;
 
@@ -15,27 +16,33 @@ public class ThingService
     private readonly DataService _dataService;
     private readonly QueueService _queueService;
     private readonly MyDeviceService _deviceService;
+    private readonly ICacheProvider _cacheProvider;
+    private readonly IoTSetting _setting;
     private readonly ITracer _tracer;
-    private readonly ICache _cache;
+    static Snowflake _snowflake = new();
 
     /// <summary>
     /// 实例化物模型服务
     /// </summary>
     /// <param name="dataService"></param>
     /// <param name="queueService"></param>
+    /// <param name="ruleService"></param>
+    /// <param name="segmentService"></param>
     /// <param name="deviceService"></param>
-    /// <param name="cacheService"></param>
+    /// <param name="cacheProvider"></param>
+    /// <param name="setting"></param>
     /// <param name="tracer"></param>
-    public ThingService(DataService dataService, QueueService queueService, MyDeviceService deviceService, CacheService cacheService, ITracer tracer)
+    public ThingService(DataService dataService, QueueService queueService, MyDeviceService deviceService, ICacheProvider cacheProvider, IoTSetting setting, ITracer tracer)
     {
         _dataService = dataService;
         _queueService = queueService;
         _deviceService = deviceService;
-        _cache = cacheService.InnerCache;
+        _cacheProvider = cacheProvider;
+        _setting = setting;
         _tracer = tracer;
     }
 
-    #region 属性
+    #region 数据存储
     /// <summary>上报数据</summary>
     /// <param name="device"></param>
     /// <param name="model"></param>
@@ -60,37 +67,6 @@ public class ThingService
 
         // 自动上线
         if (device != null) _deviceService.SetDeviceOnline(device, ip, kind);
-
-        //todo 触发指定设备的联动策略
-
-        return rs;
-    }
-
-    /// <summary>设备属性上报</summary>
-    /// <param name="device">设备</param>
-    /// <param name="items">名值对</param>
-    /// <param name="ip">IP地址</param>
-    /// <returns></returns>
-    public Int32 PostProperty(Device device, PropertyModel[] items, String ip)
-    {
-        if (items == null) return -1;
-
-        var rs = 0;
-        foreach (var item in items)
-        {
-            var property = BuildDataPoint(device, item.Name, item.Value, 0, ip);
-            if (property != null)
-            {
-                UpdateProperty(property);
-
-                SaveHistory(device, property, 0, nameof(PostProperty), ip);
-
-                rs++;
-            }
-        }
-
-        // 自动上线
-        if (device != null) _deviceService.SetDeviceOnline(device, ip, nameof(PostProperty));
 
         //todo 触发指定设备的联动策略
 
@@ -175,12 +151,12 @@ public class ThingService
     /// <param name="ip"></param>
     public void SaveHistory(Device device, DeviceProperty property, Int64 timestamp, String kind, String ip)
     {
-        using var span = _tracer?.NewSpan(nameof(SaveHistory), new { deviceName = device.Name, property.Name, property.Value, property.Type });
+        using var span = _tracer?.NewSpan("thing:SaveHistory", new { deviceName = device.Name, property.Name, property.Value, property.Type });
         try
         {
             // 记录数据流水，使用经过处理的属性数值字段
             var id = 0L;
-            var data = _dataService.AddData(property.DeviceId, timestamp, property.Name, property.Value, kind, ip);
+            var data = _dataService.AddData(property.DeviceId, property.Id, timestamp, property.Name, property.Value, kind, ip);
             if (data != null) id = data.Id;
 
             //todo 存储分段数据
@@ -202,15 +178,39 @@ public class ThingService
     private DeviceProperty GetProperty(Device device, String name)
     {
         var key = $"DeviceProperty:{device.Id}:{name}";
-        if (_cache.TryGetValue<DeviceProperty>(key, out var property)) return property;
+        if (_cacheProvider.InnerCache.TryGetValue<DeviceProperty>(key, out var property)) return property;
 
         using var span = _tracer?.NewSpan(nameof(GetProperty), $"{device.Id}-{name}");
 
-        var entity = device.Properties.FirstOrDefault(e => e.Name.EqualIgnoreCase(name));
+        //var entity = device.Properties.FirstOrDefault(e => e.Name.EqualIgnoreCase(name));
+        var entity = DeviceProperty.FindByDeviceIdAndName(device.Id, name);
         if (entity != null)
-            _cache.Set(key, entity, 3600);
+            _cacheProvider.InnerCache.Set(key, entity, 600);
 
         return entity;
+    }
+    #endregion
+
+    #region 属性功能
+    /// <summary>获取设备属性</summary>
+    /// <param name="device">设备</param>
+    /// <param name="names">属性名集合</param>
+    /// <returns></returns>
+    public PropertyModel[] GetProperty(Device device, String[] names)
+    {
+        var list = new List<PropertyModel>();
+        foreach (var item in device.Properties)
+        {
+            // 转换得到的属性是只读，不会返回到设备端，可以人为取消只读，此时返回设备端。
+            if (item.Enable && (names == null || names.Length == 0 || item.Name.EqualIgnoreCase(names)))
+            {
+                list.Add(new PropertyModel { Name = item.Name, Value = item.Value });
+
+                item.SaveAsync();
+            }
+        }
+
+        return list.ToArray();
     }
 
     /// <summary>查询设备属性。应用端调用</summary>
@@ -229,6 +229,21 @@ public class ThingService
 
         return list.ToArray();
     }
+    #endregion
+
+    #region 事件
+    /// <summary>设备事件上报</summary>
+    /// <param name="device"></param>
+    /// <param name="events"></param>
+    /// <param name="ip"></param>
+    /// <returns></returns>
+    public Int32 PostEvent(Device device, EventModel[] events, String ip) => throw new NotImplementedException();
+
+    /// <summary>设备事件上报</summary>
+    /// <param name="device"></param>
+    /// <param name="event"></param>
+    /// <param name="ip"></param>
+    public void PostEvent(Device device, EventModel @event, String ip) => throw new NotImplementedException();
     #endregion
 
     #region 服务调用
@@ -255,47 +270,35 @@ public class ThingService
         return log;
     }
 
-    /// <summary>服务响应</summary>
-    /// <param name="device"></param>
-    /// <param name="model"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public Int32 ServiceReply(Device device, ServiceReplyModel model)
-    {
-        //var log = DeviceServiceLog.FindById(model.Id);
-        //if (log == null) return null;
+    ///// <summary>服务响应</summary>
+    ///// <param name="device"></param>
+    ///// <param name="model"></param>
+    ///// <returns></returns>
+    ///// <exception cref="InvalidOperationException"></exception>
+    //public DeviceServiceLog ServiceReply(Device device, ServiceReplyModel model) => throw new NotImplementedException();
 
-        //// 防止越权
-        //if (log.DeviceId != device.Id)
-        //    throw new InvalidOperationException($"[{device}]越权访问[{log.DeviceName}]的服务");
-
-        //log.Status = model.Status;
-        //log.OutputData = model.Data;
-        //log.Update();
-
-        // 推入服务响应队列，让服务调用方得到响应
-        _queueService.Publish(model);
-
-        return 1;
-    }
-
-    /// <summary>
-    /// 异步调用服务，并返回结果
-    /// </summary>
+    /// <summary>异步调用服务，并等待响应</summary>
     /// <param name="device"></param>
     /// <param name="command"></param>
     /// <param name="argument"></param>
     /// <param name="expire"></param>
+    /// <param name="timeout"></param>
     /// <returns></returns>
-    public async Task<ServiceReplyModel> InvokeAsync(Device device, String command, String argument, DateTime expire)
+    public async Task<ServiceReplyModel> InvokeServiceAsync(Device device, String command, String argument, DateTime expire, Int32 timeout)
     {
         var model = InvokeService(device, command, argument, expire);
 
-        //var model = log.ToServiceModel();
         _queueService.Publish(device.Code, model);
 
-        var rs = await _queueService.GetReplyQueue(model.Id).TakeOneAsync(5_000);
-        return rs?.ToJsonEntity<ServiceReplyModel>();
+        var reply = new ServiceReplyModel { Id = model.Id };
+
+        // 挂起等待。借助redis队列，等待响应
+        if (timeout > 1000)
+        {
+            throw new NotImplementedException();
+        }
+
+        return reply;
     }
     #endregion
 }

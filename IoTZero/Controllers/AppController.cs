@@ -27,7 +27,6 @@ public class AppController : ControllerBase, IActionFilter
     /// <summary>令牌</summary>
     public String Token { get; set; }
 
-    private readonly QueueService _queue;
     private readonly MyDeviceService _deviceService;
     private readonly ThingService _thingService;
     private readonly ITracer _tracer;
@@ -41,9 +40,8 @@ public class AppController : ControllerBase, IActionFilter
     /// <param name="deviceService"></param>
     /// <param name="thingService"></param>
     /// <param name="tracer"></param>
-    public AppController(QueueService queue, MyDeviceService deviceService, ThingService thingService, ITracer tracer)
+    public AppController(MyDeviceService deviceService, ThingService thingService, ITracer tracer)
     {
-        _queue = queue;
         _deviceService = deviceService;
         _thingService = thingService;
         _tracer = tracer;
@@ -167,29 +165,16 @@ public class AppController : ControllerBase, IActionFilter
         Device dv = null;
         if (service.DeviceId > 0) dv = Device.FindById(service.DeviceId);
         if (dv == null)
+        {
             if (!service.DeviceCode.IsNullOrWhiteSpace())
                 dv = Device.FindByCode(service.DeviceCode);
             else
                 throw new ArgumentNullException(nameof(service.DeviceCode));
+        }
 
         if (dv == null) throw new ArgumentException($"找不到该设备：DeviceId={service.DeviceId}，DeviceCode={service.DeviceCode}");
 
-        var model = _thingService.InvokeService(dv, service.ServiceName, service.InputData, service.Expire);
-
-        // 当前设备的上级设备，作为下发消息的主设备
-        var code = dv.Code;
-
-        _queue.Publish(code, model);
-
-        var reply = new ServiceReplyModel { Id = model.Id };
-
-        // 挂起等待。借助redis队列，等待响应
-        if (service.Timeout > 1000)
-        {
-            throw new NotImplementedException();
-        }
-
-        return reply;
+        return await _thingService.InvokeServiceAsync(dv, service.ServiceName, service.InputData, service.Expire, service.Timeout);
     }
     #endregion
 }

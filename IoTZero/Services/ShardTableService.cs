@@ -90,17 +90,11 @@ public class ShardTableService : IHostedService
                 var table = DeviceData.Meta.Table.DataTable.Clone() as IDataTable;
                 table.TableName = policy.Shard(today).TableName;
                 ts.Add(table);
-
-                var ss = EntitySession<DeviceData>.Create(dal.ConnName, table.TableName);
-                ss.Queue.MaxEntity = 10_000_000;
             }
             {
                 var table = DeviceData.Meta.Table.DataTable.Clone() as IDataTable;
                 table.TableName = policy.Shard(today.AddDays(1)).TableName;
                 ts.Add(table);
-
-                var ss = EntitySession<DeviceData>.Create(dal.ConnName, table.TableName);
-                ss.Queue.MaxEntity = 10_000_000;
             }
 
             if (ts.Count > 0)

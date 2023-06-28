@@ -41,7 +41,7 @@ public class DevicePropertyController : EntityController<DeviceProperty>
             var df = ListFields.AddDataField("Value", "Unit") as ListField;
         }
         {
-            var df = ListFields.AddDataField("Switch", "Address") as ListField;
+            var df = ListFields.AddDataField("Switch", "Enable") as ListField;
             df.DisplayName = "翻转";
             df.Url = "/IoT/DeviceProperty/Switch?id={Id}";
             df.DataAction = "action";
@@ -96,6 +96,8 @@ public class DevicePropertyController : EntityController<DeviceProperty>
         {
             var value = entity.Value.ToBoolean();
             value = !value;
+            entity.Value = value + "";
+            entity.Update();
 
             var model = new PropertyModel { Name = entity.Name, Value = value };
 
@@ -109,7 +111,7 @@ public class DevicePropertyController : EntityController<DeviceProperty>
                     model.Value,
                 };
 
-                var rs = await _thingService.InvokeAsync(entity.Device, "SetProperty", input.ToJson(), DateTime.Now.AddSeconds(5));
+                var rs = await _thingService.InvokeServiceAsync(entity.Device, "SetProperty", input.ToJson(), DateTime.Now.AddSeconds(5), 5000);
                 if (rs != null && rs.Status >= ServiceStatus.已完成)
                     msg = $"{rs.Status} {rs.Data}";
             }

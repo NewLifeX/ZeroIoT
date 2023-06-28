@@ -64,6 +64,7 @@ public class DeviceOnlineService : IHostedService
 
             var rs = DeviceOnline.ClearExpire(TimeSpan.FromSeconds(_setting.SessionTimeout));
             if (rs != null)
+            {
                 foreach (var olt in rs)
                 {
                     var device = olt?.Device;
@@ -84,6 +85,7 @@ public class DeviceOnlineService : IHostedService
                         CheckOffline(device, "超时下线");
                     }
                 }
+            }
         }
     }
 

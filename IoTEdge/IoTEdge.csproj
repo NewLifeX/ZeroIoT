@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AssemblyTitle>物联网网关</AssemblyTitle>
     <Description>IoT边缘网关</Description>
     <Company>新生命开发团队</Company>

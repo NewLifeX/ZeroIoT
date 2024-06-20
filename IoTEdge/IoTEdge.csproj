@@ -6,8 +6,8 @@
     <AssemblyTitle>物联网网关</AssemblyTitle>
     <Description>IoT边缘网关</Description>
     <Company>新生命开发团队</Company>
-    <Copyright>©2002-2023 NewLife</Copyright>
-    <VersionPrefix>1.0</VersionPrefix>
+    <Copyright>©2002-2024 NewLife</Copyright>
+    <VersionPrefix>2.0</VersionPrefix>
     <VersionSuffix>$([System.DateTime]::Now.ToString(`yyyy.MMdd`))</VersionSuffix>
     <Version>$(VersionPrefix).$(VersionSuffix)</Version>
     <FileVersion>$(Version)</FileVersion>
@@ -21,17 +21,17 @@
 
   <ItemGroup>
     <PackageReference Include="NewLife.BACnet" Version="1.0.2023.520-beta0022" />
-    <PackageReference Include="NewLife.Core" Version="10.3.2023.627-beta1611" />
-    <PackageReference Include="NewLife.IoT" Version="1.8.2023.611-beta1629" />
-    <PackageReference Include="NewLife.Modbus" Version="1.6.2023.511" />
-    <PackageReference Include="NewLife.ModbusRTU" Version="1.6.2023.511" />
-    <PackageReference Include="NewLife.MQTT" Version="1.4.2023.620-beta1039" />
-    <PackageReference Include="NewLife.NetPing" Version="1.1.2023.511" />
-    <PackageReference Include="NewLife.PC" Version="1.0.2023.511" />
-    <PackageReference Include="NewLife.Schneider" Version="1.0.2023.511" />
-    <PackageReference Include="NewLife.Siemens" Version="1.0.2023.511" />
-    <PackageReference Include="NewLife.Stardust" Version="2.9.2023.627-beta0441" />
-    <PackageReference Include="SmartA2" Version="1.0.2023.606-beta1304" />
+    <PackageReference Include="NewLife.Core" Version="10.10.2024.601" />
+    <PackageReference Include="NewLife.IoT" Version="2.2.2024.501" />
+    <PackageReference Include="NewLife.Modbus" Version="1.8.2024.217" />
+    <PackageReference Include="NewLife.ModbusRTU" Version="1.8.2024.217" />
+    <PackageReference Include="NewLife.MQTT" Version="2.0.2024.516" />
+    <PackageReference Include="NewLife.NetPing" Version="1.1.2024.217" />
+    <PackageReference Include="NewLife.PC" Version="1.0.2024.217" />
+    <PackageReference Include="NewLife.Schneider" Version="1.0.2024.218" />
+    <PackageReference Include="NewLife.Siemens" Version="1.1.2024.218" />
+    <PackageReference Include="NewLife.Stardust" Version="2.9.2024.402" />
+    <PackageReference Include="SmartA2" Version="1.1.2024.218" />
     <PackageReference Include="SmartA4" Version="1.0.2023.606-beta1305" />
   </ItemGroup>
 

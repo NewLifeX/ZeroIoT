@@ -1,17 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyTitle>物联网数据层</AssemblyTitle>
     <Description>IoT数据层</Description>
     <Company>新生命开发团队</Company>
-    <Copyright>©2002-2023 NewLife</Copyright>
-    <VersionPrefix>1.0</VersionPrefix>
+    <Copyright>©2002-2024 NewLife</Copyright>
+    <VersionPrefix>2.0</VersionPrefix>
     <VersionSuffix>$([System.DateTime]::Now.ToString(`yyyy.MMdd`))</VersionSuffix>
     <Version>$(VersionPrefix).$(VersionSuffix)</Version>
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(VersionPrefix).*</AssemblyVersion>
     <Deterministic>false</Deterministic>
+    <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
@@ -25,17 +26,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Config\**" />
     <Compile Remove="Entity\Config\**" />
     <Compile Remove="Entity\Log\**" />
+    <Compile Remove="Log\**" />
+    <EmbeddedResource Remove="Config\**" />
     <EmbeddedResource Remove="Entity\Config\**" />
     <EmbeddedResource Remove="Entity\Log\**" />
+    <EmbeddedResource Remove="Log\**" />
+    <None Remove="Config\**" />
     <None Remove="Entity\Config\**" />
     <None Remove="Entity\Log\**" />
+    <None Remove="Log\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NewLife.IoT" Version="1.8.2023.611-beta1629" />
-    <PackageReference Include="NewLife.XCode" Version="11.8.2023.628-beta0652" />
+    <PackageReference Include="NewLife.IoT" Version="2.2.2024.501" />
+    <PackageReference Include="NewLife.XCode" Version="11.13.2024.606" />
   </ItemGroup>
 
   <ItemGroup>

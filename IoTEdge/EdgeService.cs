@@ -25,14 +25,14 @@ internal class EdgeService : IHostedService
             Log = XTrace.Log,
         };
 
-        await device.LoginAsync();
+        await device.Login();
 
         _device = device;
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_device != null) await _device.LogoutAsync(nameof(StopAsync));
+        if (_device != null) await _device.Logout(nameof(StopAsync));
 
         _device.TryDispose();
     }

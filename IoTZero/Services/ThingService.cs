@@ -4,6 +4,7 @@ using NewLife.Caching;
 using NewLife.Data;
 using NewLife.IoT.ThingModels;
 using NewLife.Log;
+using NewLife.Remoting.Extensions.Models;
 using NewLife.Remoting.Extensions.Services;
 using NewLife.Security;
 
@@ -16,7 +17,7 @@ public class ThingService
     private readonly QueueService _queueService;
     private readonly IDeviceService _deviceService;
     private readonly ICacheProvider _cacheProvider;
-    private readonly IoTSetting _setting;
+    private readonly ITokenSetting _setting;
     private readonly ITracer _tracer;
     static Snowflake _snowflake = new();
 
@@ -25,13 +26,11 @@ public class ThingService
     /// </summary>
     /// <param name="dataService"></param>
     /// <param name="queueService"></param>
-    /// <param name="ruleService"></param>
-    /// <param name="segmentService"></param>
     /// <param name="deviceService"></param>
     /// <param name="cacheProvider"></param>
     /// <param name="setting"></param>
     /// <param name="tracer"></param>
-    public ThingService(DataService dataService, QueueService queueService, IDeviceService deviceService, ICacheProvider cacheProvider, IoTSetting setting, ITracer tracer)
+    public ThingService(DataService dataService, QueueService queueService, IDeviceService deviceService, ICacheProvider cacheProvider, ITokenSetting setting, ITracer tracer)
     {
         _dataService = dataService;
         _queueService = queueService;
@@ -294,6 +293,8 @@ public class ThingService
         // 挂起等待。借助redis队列，等待响应
         if (timeout > 1000)
         {
+            await Task.Delay(1000);
+
             throw new NotImplementedException();
         }
 

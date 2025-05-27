@@ -1,6 +1,6 @@
-﻿using NewLife.IoT.Models;
+﻿using NewLife;
+using NewLife.IoT.Models;
 using NewLife.IoT.ThingModels;
-using NewLife.Log;
 using NewLife.Model;
 using NewLife.Remoting.Clients;
 using NewLife.Remoting.Models;
@@ -15,17 +15,24 @@ public class HttpDevice : ClientBase
     /// <summary>产品编码。从IoT管理平台获取</summary>
     public String ProductKey { get; set; }
 
+    /// <summary>产品密钥</summary>
+    public String ProductSecret { get; set; }
+
     private readonly ClientSetting _setting;
     #endregion
 
     #region 构造
-    public HttpDevice() => Prefix = "Device/";
-
     public HttpDevice(ClientSetting setting) : base(setting)
     {
+        // 设置动作，开启下行通知
+        Features = Features.Login | Features.Logout | Features.Ping | Features.Notify | Features.Upgrade | Features.PostEvent;
+        SetActions("Device/");
+        Actions[Features.CommandReply] = "Thing/ServiceReply";
+
         _setting = setting;
 
         ProductKey = setting.ProductKey;
+        ProductSecret = setting.DeviceSecret;
     }
     #endregion
 
@@ -33,6 +40,8 @@ public class HttpDevice : ClientBase
     protected override void OnInit()
     {
         var provider = ServiceProvider ??= ObjectContainer.Provider;
+
+        PasswordProvider = new SaltPasswordProvider { Algorithm = "md5", SaltTime = 60 };
 
         // 找到容器，注册默认的模型实现，供后续InvokeAsync时自动创建正确的模型对象
         var container = ModelExtension.GetService<IObjectContainer>(provider) ?? ObjectContainer.Current;
@@ -50,14 +59,15 @@ public class HttpDevice : ClientBase
     }
     #endregion
 
-    #region 登录注销
+    #region 登录
     public override ILoginRequest BuildLoginRequest()
     {
-        var request = base.BuildLoginRequest();
-        if (request is LoginInfo info)
-        {
-            info.ProductKey = ProductKey;
-        }
+        var request = new LoginInfo();
+        FillLoginRequest(request);
+
+        request.ProductKey = ProductKey;
+        request.ProductSecret = ProductSecret;
+        request.Name = Environment.MachineName;
 
         return request;
     }
@@ -66,21 +76,11 @@ public class HttpDevice : ClientBase
     #region 心跳
     public override IPingRequest BuildPingRequest()
     {
-        var request = base.BuildPingRequest();
-        if (request is PingInfo info)
-        {
-
-        }
+        var request = new PingInfo();
+        FillPingRequest(request);
 
         return request;
     }
-
-    public override Task<Object> CommandReply(CommandReplyModel model) => InvokeAsync<Object>("Thing/ServiceReply", new ServiceReplyModel
-    {
-        Id = model.Id,
-        Status = (ServiceStatus)model.Status,
-        Data = model.Data,
-    });
     #endregion
 
     #region 数据
@@ -88,7 +88,7 @@ public class HttpDevice : ClientBase
     /// <returns></returns>
     public async Task PostDataAsync()
     {
-        if (Tracer != null) DefaultSpan.Current = null;
+        //if (Tracer != null) DefaultSpan.Current = null;
 
         using var span = Tracer?.NewSpan("PostData");
         try

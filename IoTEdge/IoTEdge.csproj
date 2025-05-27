@@ -21,16 +21,16 @@
 
   <ItemGroup>
     <PackageReference Include="NewLife.BACnet" Version="1.0.2023.520-beta0022" />
-    <PackageReference Include="NewLife.Core" Version="10.10.2024.601" />
-    <PackageReference Include="NewLife.IoT" Version="2.2.2024.501" />
+    <PackageReference Include="NewLife.Core" Version="11.5.2025.501" />
+    <PackageReference Include="NewLife.IoT" Version="2.4.2025.501" />
     <PackageReference Include="NewLife.Modbus" Version="1.8.2024.217" />
     <PackageReference Include="NewLife.ModbusRTU" Version="1.8.2024.217" />
-    <PackageReference Include="NewLife.MQTT" Version="2.0.2024.516" />
+    <PackageReference Include="NewLife.MQTT" Version="2.0.2025.415" />
     <PackageReference Include="NewLife.NetPing" Version="1.1.2024.217" />
     <PackageReference Include="NewLife.PC" Version="1.0.2024.217" />
     <PackageReference Include="NewLife.Schneider" Version="1.0.2024.218" />
     <PackageReference Include="NewLife.Siemens" Version="1.1.2024.218" />
-    <PackageReference Include="NewLife.Stardust" Version="2.9.2024.402" />
+    <PackageReference Include="NewLife.Stardust" Version="3.3.2025.506" />
     <PackageReference Include="SmartA2" Version="1.1.2024.218" />
     <PackageReference Include="SmartA4" Version="1.0.2023.606-beta1305" />
   </ItemGroup>

@@ -2,16 +2,16 @@
 using IoT.Data;
 using NewLife;
 using NewLife.Caching;
-using NewLife.Caching.Queues;
 using NewLife.IoT.Models;
 using NewLife.Log;
 using NewLife.Remoting;
+using NewLife.Remoting.Extensions.Models;
 using NewLife.Remoting.Extensions.Services;
 using NewLife.Remoting.Models;
+using NewLife.Remoting.Services;
 using NewLife.Security;
 using NewLife.Serialization;
 using NewLife.Web;
-using LoginResponse = NewLife.Remoting.Models.LoginResponse;
 
 namespace IoTZero.Services;
 
@@ -20,20 +20,21 @@ public class MyDeviceService : IDeviceService
 {
     private readonly ICacheProvider _cacheProvider;
     private readonly ICache _cache;
+    private readonly ISessionManager _sessionManager;
     private readonly IPasswordProvider _passwordProvider;
-    private readonly IoTSetting _setting;
+    private readonly ITokenSetting _setting;
     private readonly ITracer _tracer;
 
     /// <summary>
     /// 实例化设备服务
     /// </summary>
     /// <param name="passwordProvider"></param>
-    /// <param name="dataService"></param>
     /// <param name="cacheProvider"></param>
     /// <param name="setting"></param>
     /// <param name="tracer"></param>
-    public MyDeviceService(IPasswordProvider passwordProvider, ICacheProvider cacheProvider, IoTSetting setting, ITracer tracer)
+    public MyDeviceService(ISessionManager sessionManager, IPasswordProvider passwordProvider, ICacheProvider cacheProvider, ITokenSetting setting, ITracer tracer)
     {
+        _sessionManager = sessionManager;
         _passwordProvider = passwordProvider;
         _cacheProvider = cacheProvider;
         _cache = cacheProvider.InnerCache;
@@ -41,7 +42,7 @@ public class MyDeviceService : IDeviceService
         _tracer = tracer;
     }
 
-    #region 登录
+    #region 登录注销
     /// <summary>
     /// 设备登录验证，内部支持动态注册
     /// </summary>
@@ -89,7 +90,7 @@ public class MyDeviceService : IDeviceService
 
         //if (dv != null && !dv.Enable) throw new ApiException(99, "禁止登录");
 
-        if (dv == null) throw new ApiException(ApiCode.Unauthorized, "节点鉴权失败");
+        if (dv == null) throw new ApiException(ApiCode.Unauthorized, "登录失败");
 
         dv.Login(inf, ip);
 
@@ -100,7 +101,7 @@ public class MyDeviceService : IDeviceService
         //SetChildOnline(dv, ip);
 
         // 登录历史
-        WriteHistory(dv, source + "设备鉴权", true, $"[{dv.Name}/{dv.Code}]鉴权成功 " + inf.ToJson(false, false, false), ip);
+        WriteHistory(dv, source + "登录", true, $"[{dv.Name}/{dv.Code}]登录成功 " + inf.ToJson(false, false, false), ip);
 
         var rs = new LoginResponse
         {
@@ -218,13 +219,14 @@ public class MyDeviceService : IDeviceService
     }
     #endregion
 
-    #region 心跳
+    #region 心跳保活
     /// <summary>心跳</summary>
-    /// <param name="inf"></param>
+    /// <param name="device"></param>
+    /// <param name="request"></param>
     /// <param name="token"></param>
     /// <param name="ip"></param>
     /// <returns></returns>
-    public IOnlineModel Ping(IDeviceModel device, IPingRequest? request, String token, String ip)
+    public IOnlineModel Ping(IDeviceModel device, IPingRequest request, String token, String ip)
     {
         var dv = device as Device;
         var inf = request as PingInfo;
@@ -245,11 +247,35 @@ public class MyDeviceService : IDeviceService
         return olt;
     }
 
+    /// <summary>设置设备的长连接上线/下线</summary>
+    /// <param name="device"></param>
+    /// <param name="online"></param>
+    /// <param name="token"></param>
+    /// <param name="ip"></param>
+    /// <returns></returns>
+    public IOnlineModel SetOnline(IDeviceModel device, Boolean online, String token, String ip)
+    {
+        if (device is Device dv)
+        {
+            // 上线打标记
+            var olt = GetOnline(dv, ip);
+            if (olt != null)
+            {
+                olt.WebSocket = online;
+                olt.Update();
+            }
+
+            return olt;
+        }
+
+        return null;
+    }
+
     /// <summary></summary>
     /// <param name="device"></param>
     /// <param name="ip"></param>
     /// <returns></returns>
-    protected virtual DeviceOnline GetOnline(Device device, String ip)
+    public virtual DeviceOnline GetOnline(Device device, String ip)
     {
         var sid = $"{device.Id}@{ip}";
         var olt = _cache.Get<DeviceOnline>($"DeviceOnline:{sid}");
@@ -266,7 +292,7 @@ public class MyDeviceService : IDeviceService
     /// <param name="device"></param>
     /// <param name="ip"></param>
     /// <returns></returns>
-    protected virtual DeviceOnline CreateOnline(Device device, String ip)
+    public virtual DeviceOnline CreateOnline(Device device, String ip)
     {
         var sid = $"{device.Id}@{ip}";
         var olt = DeviceOnline.GetOrAdd(sid);
@@ -295,6 +321,41 @@ public class MyDeviceService : IDeviceService
     }
     #endregion
 
+    #region 升级更新
+    /// <summary>升级检查</summary>
+    /// <param name="channel">更新通道</param>
+    /// <returns></returns>
+    public IUpgradeInfo Upgrade(IDeviceModel device, String channel, String ip)
+    {
+        //return new UpgradeInfo();
+        return null;
+    }
+    #endregion
+
+    #region 下行通知
+    /// <summary>发送命令</summary>
+    /// <param name="device"></param>
+    /// <param name="command"></param>
+    /// <returns></returns>
+    public Task<Int32> SendCommand(IDeviceModel device, CommandModel command, CancellationToken cancellationToken) => _sessionManager.PublishAsync(device.Code, command, null, cancellationToken);
+    #endregion
+
+    #region 事件上报
+    /// <summary>命令响应</summary>
+    /// <param name="device"></param>
+    /// <param name="model"></param>
+    /// <param name="ip"></param>
+    /// <returns></returns>
+    public Int32 CommandReply(IDeviceModel device, CommandReplyModel model, String ip) => 0;
+
+    /// <summary>上报事件</summary>
+    /// <param name="device"></param>
+    /// <param name="events"></param>
+    /// <param name="ip"></param>
+    /// <returns></returns>
+    public Int32 PostEvents(IDeviceModel device, EventModel[] events, String ip) => 0;
+    #endregion
+
     #region 辅助
     /// <summary>
     /// 颁发令牌
@@ -302,7 +363,7 @@ public class MyDeviceService : IDeviceService
     /// <param name="name"></param>
     /// <param name="set"></param>
     /// <returns></returns>
-    public TokenModel IssueToken(String name, IoTSetting set)
+    public TokenModel IssueToken(String name, ITokenSetting set)
     {
         // 颁发令牌
         var ss = set.TokenSecret.Split(':');
@@ -359,7 +420,7 @@ public class MyDeviceService : IDeviceService
     /// <param name="deviceCode"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public TokenModel ValidAndIssueToken(String deviceCode, String? token)
+    public TokenModel ValidAndIssueToken(String deviceCode, String token)
     {
         if (token.IsNullOrEmpty()) return null;
 
@@ -376,19 +437,6 @@ public class MyDeviceService : IDeviceService
         if (DateTime.Now.AddMinutes(10) > jwt.Expire) return IssueToken(deviceCode, _setting);
 
         return null;
-    }
-
-    /// <summary>
-    /// 获取指定设备的命令队列
-    /// </summary>
-    /// <param name="deviceCode"></param>
-    /// <returns></returns>
-    public IProducerConsumer<String> GetQueue(String deviceCode)
-    {
-        var q = _cacheProvider.GetQueue<String>($"cmd:{deviceCode}");
-        if (q is QueueBase qb) qb.TraceName = "ServiceQueue";
-
-        return q;
     }
 
     /// <summary>查找设备</summary>

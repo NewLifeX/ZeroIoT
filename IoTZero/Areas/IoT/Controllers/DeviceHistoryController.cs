@@ -1,5 +1,7 @@
 ﻿using IoT.Data;
+using NewLife;
 using NewLife.Cube;
+using NewLife.Cube.Extensions;
 using NewLife.Web;
 using XCode.Membership;
 
@@ -9,6 +11,14 @@ namespace IoTZero.Areas.IoT.Controllers;
 [Menu(60, true)]
 public class DeviceHistoryController : ReadOnlyEntityController<DeviceHistory>
 {
+    static DeviceHistoryController()
+    {
+        ListFields.RemoveField("Id");
+        ListFields.AddListField("Remark", null, "Success");
+
+        ListFields.TraceUrl();
+    }
+
     protected override IEnumerable<DeviceHistory> Search(Pager p)
     {
         var deviceId = p["deviceId"].ToInt(-1);

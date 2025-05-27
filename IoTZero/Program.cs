@@ -1,12 +1,17 @@
 ﻿using IoTZero;
 using IoTZero.Services;
-using NewLife.Caching;
 using NewLife.Cube;
 using NewLife.Log;
+using NewLife.Reflection;
+using NewLife.Remoting.Extensions;
 using XCode;
 
 // 日志输出到控制台，并拦截全局异常
 XTrace.UseConsole();
+
+#if DEBUG
+XTrace.Log.Level = NewLife.Log.LogLevel.Debug;
+#endif
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -20,20 +25,12 @@ var star = services.AddStardust(null);
 var set = IoTSetting.Current;
 services.AddSingleton(set);
 
-// 逐个注册每一个用到的服务，必须做到清晰明了
-services.AddSingleton<ThingService>();
-services.AddSingleton<DataService>();
-services.AddSingleton<QueueService>();
+// 注册Redis缓存提供者
+//services.AddSingleton<ICacheProvider, RedisCacheProvider>();
 
-// 注册IoT
+// 注册Remoting所必须的服务
 services.AddIoT(set);
 //services.AddRemoting(set);
-
-services.AddSingleton<ICache, MemoryCache>();
-
-// 后台服务
-services.AddHostedService<ShardTableService>();
-services.AddHostedService<DeviceOnlineService>();
 
 // 启用接口响应压缩
 services.AddResponseCompression();
@@ -45,24 +42,16 @@ services.AddCube();
 
 var app = builder.Build();
 
-// 预热数据层，执行反向工程建表等操作
-EntityFactory.InitConnection("Membership");
-EntityFactory.InitConnection("Log");
-EntityFactory.InitConnection("Cube");
-EntityFactory.InitConnection("IoT");
-
 // 使用Cube前添加自己的管道
 if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 else
     app.UseExceptionHandler("/CubeHome/Error");
 
-app.UseResponseCompression();
+if (Environment.GetEnvironmentVariable("__ASPNETCORE_BROWSER_TOOLS") is null)
+    app.UseResponseCompression();
 
-app.UseWebSockets(new WebSocketOptions()
-{
-    KeepAliveInterval = TimeSpan.FromSeconds(60),
-});
+app.UseRemoting();
 
 // 使用魔方
 app.UseCube(app.Environment);
@@ -73,7 +62,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=CubeHome}/{action=Index}/{id?}");
 
-app.RegisterService("AlarmServer", null, app.Environment.EnvironmentName);
+app.RegisterService(star.AppId, null, app.Environment.EnvironmentName);
 
 app.Run();
 

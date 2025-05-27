@@ -7,6 +7,7 @@ using NewLife.IoT.ThingModels;
 using NewLife.Log;
 using NewLife.Remoting;
 using NewLife.Remoting.Extensions;
+using NewLife.Remoting.Extensions.Services;
 using NewLife.Remoting.Models;
 
 namespace IoTZero.Controllers;
@@ -20,18 +21,18 @@ public class DeviceController : BaseDeviceController
     /// <summary>当前设备</summary>
     public Device Device { get; set; }
 
+    private readonly MyDeviceService _deviceService;
     private readonly ThingService _thingService;
     private readonly ITracer _tracer;
 
     #region 构造
     /// <summary>实例化设备控制器</summary>
     /// <param name="serviceProvider"></param>
-    /// <param name="queue"></param>
-    /// <param name="deviceService"></param>
     /// <param name="thingService"></param>
     /// <param name="tracer"></param>
     public DeviceController(IServiceProvider serviceProvider, ThingService thingService, ITracer tracer) : base(serviceProvider)
     {
+        _deviceService = serviceProvider.GetRequiredService<IDeviceService>() as MyDeviceService;
         _thingService = thingService;
         _tracer = tracer;
     }
@@ -47,13 +48,12 @@ public class DeviceController : BaseDeviceController
     #endregion
 
     #region 心跳
-    /// <summary>设备心跳</summary>
+    /// <summary>心跳</summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    [HttpPost(nameof(Ping))]
-    public override IPingResponse Ping([FromBody] IPingRequest request)
+    protected override IPingResponse OnPing(IPingRequest request)
     {
-        var rs = base.Ping(request);
+        var rs = base.OnPing(request);
 
         var device = Device;
         if (device != null && rs != null)
@@ -62,19 +62,6 @@ public class DeviceController : BaseDeviceController
         }
 
         return rs;
-    }
-    #endregion
-
-    #region 升级
-    /// <summary>升级检查</summary>
-    /// <returns></returns>
-    [HttpGet(nameof(Upgrade))]
-    public override IUpgradeInfo Upgrade()
-    {
-        var device = Device ?? throw new ApiException(ApiCode.Unauthorized, "节点未登录");
-
-        //throw new NotImplementedException();
-        return new UpgradeInfo { };
     }
     #endregion
 

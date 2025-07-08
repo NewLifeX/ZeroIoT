@@ -26,8 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NewLife.IoT" Version="2.4.2025.501" />
-    <PackageReference Include="NewLife.Remoting" Version="3.3.2025.501" />
+    <PackageReference Include="NewLife.IoT" Version="2.6.2025.701" />
+    <PackageReference Include="NewLife.Remoting" Version="3.3.2025.701" />
   </ItemGroup>
 
 </Project>

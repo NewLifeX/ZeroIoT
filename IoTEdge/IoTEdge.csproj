@@ -27,10 +27,10 @@
     <PackageReference Include="NewLife.ModbusRTU" Version="2.0.2025.701" />
     <PackageReference Include="NewLife.MQTT" Version="2.1.2025.601" />
     <PackageReference Include="NewLife.NetPing" Version="1.1.2025.701" />
-    <PackageReference Include="NewLife.PC" Version="1.0.2024.217" />
+    <PackageReference Include="NewLife.PC" Version="1.0.2025.701" />
     <PackageReference Include="NewLife.Schneider" Version="1.0.2024.218" />
-    <PackageReference Include="NewLife.Siemens" Version="1.1.2024.218" />
-    <PackageReference Include="NewLife.Stardust" Version="3.3.2025.506" />
+    <PackageReference Include="NewLife.Siemens" Version="1.1.2025.701" />
+    <PackageReference Include="NewLife.Stardust" Version="3.4.2025.701" />
     <PackageReference Include="SmartA2" Version="1.1.2024.218" />
     <PackageReference Include="SmartA4" Version="1.0.2023.606-beta1305" />
   </ItemGroup>
